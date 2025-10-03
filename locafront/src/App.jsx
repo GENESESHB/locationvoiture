@@ -34,7 +34,7 @@ const MOCK_CARS = [
   {
     id: 'c4',
     name: 'Range Rover Sport',
-    imageUrl: 'https://images.unsplash.com/photo-1617814071605-7f62b88d5b6a?w=1200&q=80&auto=format&fit=crop',
+    imageUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTjWQGRQbOfYNGyOu5uV-o0K7bkz97qM56QEw&s',
     rating: 8.6,
     reviewsCount: 205,
     priceMAD: 890,

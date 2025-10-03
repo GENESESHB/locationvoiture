@@ -297,64 +297,52 @@ body{
 /* =========================================================
    Highlights — flat (no cards)
    ========================================================= */
-.hi-wrap.flat {
-  background: #fff;               /* section stays white */
-  padding: 28px 16px;
+/* ==== Plain highlights strip (no cards) ==== */
+.hi-plain{
+  background:#fff;
+  padding: 56px 20px;              /* generous white space top/bottom */
 }
-
-.hi-wrap.flat .hi-row {
-  list-style: none;
+.hi-plain .hi-row{
+  max-width: 1150px;
   margin: 0 auto;
-  padding: 0;
-  max-width: 1200px;
-  display: grid;
-  gap: 28px 40px;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  align-items: center;
+  list-style:none; padding:0;
+  display:grid; gap: 36px 24px;
+  grid-template-columns: repeat(4, minmax(0,1fr));   /* 4 across desktop */
+  align-items:start; justify-items:center;
+}
+.hi-plain .hi-col{
+  display:flex;
+  flex-direction:column;           /* icon on top, text below */
+  align-items:center;
+  text-align:center;
+  gap:10px;
+}
+.hi-plain .hi-img{
+  width:72px; height:72px;         /* big icon like screenshot */
+  object-fit:contain;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.06));
+}
+.hi-plain .hi-title{
+  margin: 6px 0 0;
+  font-weight:700;
+  color:#142534;
+  font-size:16px;                  /* first line */
+}
+.hi-plain .hi-text{
+  margin:0;
+  color:#6b7b8a;
+  font-weight:600;
+  font-size:14px;                  /* second line */
 }
 
-.hi-wrap.flat .hi-item {
-  /* remove card look */
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-  padding: 0;
-
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 14px;
-  text-align: left;
+/* responsive (same behavior as screenshot) */
+@media (max-width: 1024px){
+  .hi-plain .hi-row{ grid-template-columns: repeat(2,1fr); }
 }
-
-.hi-wrap.flat .hi-icon {
-  width: 56px;
-  height: 56px;
-  display: block;
-}
-
-.hi-wrap.flat .hi-title {
-  margin: 0 0 4px 0;
-  font-weight: 700;
-  font-size: 16px;
-  color: #142534;
-}
-
-.hi-wrap.flat .hi-text {
-  margin: 0;
-  font-size: 14px;
-  color: #6b7b8a;
-  font-weight: 600;
-}
-
-/* Mobile tweaks */
-@media (max-width: 640px) {
-  .hi-wrap.flat { padding: 20px 14px; }
-  .hi-wrap.flat .hi-row { gap: 18px; }
-  .hi-wrap.flat .hi-item {
-    grid-template-columns: auto 1fr;
-  }
-  .hi-wrap.flat .hi-icon { width: 48px; height: 48px; }
+@media (max-width: 560px){
+  .hi-plain{ padding: 36px 16px; }
+  .hi-plain .hi-row{ grid-template-columns: 1fr; gap:28px; }
+  .hi-plain .hi-img{ width:64px; height:64px; }
 }
 
 
