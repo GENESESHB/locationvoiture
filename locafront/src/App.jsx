@@ -2,6 +2,7 @@ import WegoHeader from './components/WegoHeader'
 import HeroSearch from './components/HeroSearch'
 import CarHighlights from './components/CarHighlights';
 import CarList from './components/CarList';
+import UserLocation from "./components/UserLocation";
 import './index.css'
 
 const MOCK_CARS = [
@@ -89,6 +90,7 @@ export default function App() {
       <section className="sec1">
         <CarHighlights />
         <CarList title="Voitures les plus demandées à Béni Mellal" cars={MOCK_CARS} />
+        <UserLocation />
       </section>
     </>
   )
