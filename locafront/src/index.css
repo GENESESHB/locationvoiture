@@ -66,8 +66,8 @@ body{
 
 /* Mobile menu panel */
 .mobile-panel{
-  position:fixed;top:56px;left:0;right:0;background:rgba(16,23,32,.7);
-  backdrop-filter: blur(8px);padding:var(--space-4);z-index:39;
+  position:fixed;top:64px;left:0;right:0;
+  backdrop-filter: blur(8px); z-index:39;
 }
 .mobile-sheet{
   width:var(--container);margin:auto;background:#ffffff; border-radius:16px;
@@ -280,7 +280,7 @@ body{
 .sec1 {
   width: 100%;
   background-color: #fff;   /* white background */
-  padding: 40px 20px;       /* space around content */
+  padding: 0px;       /* space around content */
   box-sizing: border-box;
 }
 
@@ -345,4 +345,32 @@ body{
   .hi-plain .hi-img{ width:64px; height:64px; }
 }
 
+
+.mobile-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 36px;
+  height: 36px;
+  background: #cccccc3d;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: black;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  z-index: 20;
+}
+
+.mobile-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.mobile-close svg {
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
 
