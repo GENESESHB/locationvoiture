@@ -8,7 +8,7 @@ export default function UserLocation() {
   useEffect(() => {
     async function fetchLocation() {
       try {
-        const res = await fetch("http://localhost:3001/whoami/place");
+        const res = await fetch("https://locationvoiture-cbdj.vercel.app/whoami/place");
         if (!res.ok) throw new Error("Failed to fetch location");
         const data = await res.json();
         setLocation(data);
@@ -18,6 +18,7 @@ export default function UserLocation() {
         setLoading(false);
       }
     }
+
     fetchLocation();
   }, []);
 
