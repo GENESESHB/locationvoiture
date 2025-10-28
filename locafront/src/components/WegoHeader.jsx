@@ -1,99 +1,101 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import './styles/WegoHeader.css';
 
 export default function WegoHeader() {
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const closeBtnRef = useRef(null)
-  const openerBtnRef = useRef(null)
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrollHeader, setScrollHeader] = useState(false);
+  const closeBtnRef = useRef(null);
+  const openerBtnRef = useRef(null);
+
+  // Scroll detection
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollHeader(window.scrollY > 100); // Affiche le mini header après 100px scroll
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Close on Esc key
   useEffect(() => {
-    const onEsc = (e) => {
-      if (e.key === 'Escape') setMobileOpen(false)
-    }
-    document.addEventListener('keydown', onEsc)
-    return () => document.removeEventListener('keydown', onEsc)
-  }, [])
+    const onEsc = (e) => e.key === 'Escape' && setMobileOpen(false);
+    document.addEventListener('keydown', onEsc);
+    return () => document.removeEventListener('keydown', onEsc);
+  }, []);
 
   // Disable body scroll when menu is open
   useEffect(() => {
-    const body = document.body
+    const body = document.body;
     if (mobileOpen) {
-      body.classList.add('no-scroll')
-      closeBtnRef.current?.focus()
+      body.classList.add('no-scroll');
+      closeBtnRef.current?.focus();
     } else {
-      body.classList.remove('no-scroll')
-      openerBtnRef.current?.focus()
+      body.classList.remove('no-scroll');
+      openerBtnRef.current?.focus();
     }
-    return () => body.classList.remove('no-scroll')
-  }, [mobileOpen])
+    return () => body.classList.remove('no-scroll');
+  }, [mobileOpen]);
 
-  const closeMenu = () => setMobileOpen(false)
+  const closeMenu = () => setMobileOpen(false);
 
   return (
-    <header className="site-header">
-      <nav className="nav" aria-label="Barre de navigation principale">
-        <div className="brand">
-          <div className="logo">W</div> WegoPro Voyages d’affaires
-        </div>
-
-        <div className="menu" role="menubar">
-          <span className="chip" role="menuitem">About</span>
-          <span className="chip" role="menuitem">Contact</span>
-          <span className="chip" role="menuitem">Support</span>
-          <span className="chip" role="menuitem">Expérience</span>
-          <a className="signin" href="#" role="menuitem">Réserver</a>
-        </div>
-
-        <button
-          ref={openerBtnRef}
-          className="hamburger"
-          aria-expanded={mobileOpen ? 'true' : 'false'}
-          aria-controls="mobilePanel"
-          onClick={() => setMobileOpen(v => !v)}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff">
-            <path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z" />
-          </svg>
-          <span>Menu</span>
-        </button>
-      </nav>
-
-      {mobileOpen && (
-        <div
-          className="mobile-panel"
-          id="mobilePanel"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="mobileMenuTitle"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) closeMenu()
-          }}
-        >
-          <div className="mobile-sheet">
-            <div className="mobile-sheet__header">
-              <h2 id="mobileMenuTitle">Menu</h2>
-              <button
-                ref={closeBtnRef}
-                className="mobile-close"
-                onClick={closeMenu}
-                aria-label="Fermer le menu"
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M18.3 5.7a1 1 0 0 0-1.4-1.4L12 9.17 7.1 4.3A1 1 0 0 0 5.7 5.7L10.6 10.6 5.7 15.5a1 1 0 1 0 1.4 1.4L12 12.03l4.9 4.87a1 1 0 0 0 1.4-1.4l-4.9-4.9 4.9-4.9Z" />
-                </svg>
-              </button>
-            </div>
-
-            <nav className="mobile-nav">
-              <a className="mobile-item" href="#"><span>À propos</span><small>Qui sommes-nous</small></a>
-              <a className="mobile-item" href="#"><span>Support</span><small>Aide &amp; FAQ</small></a>
-              <a className="mobile-item" href="#"><span>Expérience</span><small>Clients</small></a>
-              <a className="mobile-item" href="#"><span>Réserver</span><small>services</small></a>
-            </nav>
+    <>
+      <header className="wego-header">
+        <nav className="wego-nav" aria-label="Navigation principale">
+          <div className="wego-brand">
+            <div className="wego-logo">W</div>
+            <Link to="/" onClick={closeMenu} className="wego-title">
+              WegoPro <span>Voyages d'affaires</span>
+            </Link>
           </div>
+
+          <div className="wego-menu">
+            <Link to="/about" className="wego-link">À propos</Link>
+            <Link to="/contact" className="wego-link">Contact</Link>
+            <Link to="/support" className="wego-link">Support</Link>
+            <Link to="/experience" className="wego-link">Expérience</Link>
+            <Link to="/reserver" className="wego-btn" onClick={closeMenu}>Réserver</Link>
+          </div>
+
+          <button
+            ref={openerBtnRef}
+            className="wego-hamburger"
+            aria-expanded={mobileOpen ? 'true' : 'false'}
+            onClick={() => setMobileOpen(v => !v)}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="#fff">
+              <path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z" />
+            </svg>
+          </button>
+        </nav>
+
+        {mobileOpen && (
+          <div className="wego-mobile" onClick={(e) => e.target === e.currentTarget && closeMenu()}>
+            <div className="wego-mobile-sheet">
+              <div className="wego-mobile-header">
+                <h2>Menu</h2>
+                <button ref={closeBtnRef} className="wego-close" onClick={closeMenu}>✕</button>
+              </div>
+              <nav className="wego-mobile-nav">
+                <Link to="/about" onClick={closeMenu}>À propos</Link>
+                <Link to="/contact" onClick={closeMenu}>Contact</Link>
+                <Link to="/support" onClick={closeMenu}>Support</Link>
+                <Link to="/experience" onClick={closeMenu}>Expérience</Link>
+                <Link to="/reserver" className="wego-btn" onClick={closeMenu}>Réserver</Link>
+              </nav>
+            </div>
+          </div>
+        )}
+      </header>
+
+      {/* Mini header sur scroll */}
+      {scrollHeader && (
+        <div className="wego-mini-header">
+          <div className="wego-mini-logo">W</div>
+          <Link to="/reserver" className="wego-mini-btn">Réserver</Link>
         </div>
       )}
-    </header>
-  )
+    </>
+  );
 }
-
