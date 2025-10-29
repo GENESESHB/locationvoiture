@@ -4,7 +4,12 @@ export default function Bots() {
   // State
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { from: "bot", text: "👋 Bonjour ! Je suis Sarah, votre conseillère WeCar. Ravie de vous accompagner dans la recherche de votre voiture de location idéale ! 🚗\n\nDe quel type de véhicule avez-vous besoin pour votre prochain voyage ?" },
+    {
+      from: "bot",
+      text:
+        "👋 Bonjour ! Je suis Sarah, votre conseillère WeCar. Ravie de vous accompagner dans la recherche de votre voiture de location idéale ! 🚗\n\nDe quel type de véhicule avez-vous besoin pour votre prochain voyage ?",
+      at: Date.now(),
+    },
   ]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -17,97 +22,121 @@ export default function Bots() {
     light: "#e8f7ef",
     dark: "#1e7a4a",
     gradient: "linear-gradient(135deg, #36c275 0%, #2aa15f 100%)",
-    messageText: "#444444"
+    messageText: "#222222",
+    subtle: "#6b7280",
   };
 
   // === BASE DE CONNAISSANCE AVEC APPROCHE COMMERCIALE ===
   const answers = [
-    { 
-      keywords: ["bonjour", "salut", "hey", "hello", "coucou"], 
-      reply: "👋 Bonjour ! Je suis Sarah de WeCar, ravie de faire votre connaissance ! \n\nJe vois que vous cherchez une voiture de location ? Pourriez-vous me dire un peu plus sur votre projet de voyage ? Par exemple :\n• Combien de personnes voyagez-vous ?\n• Quelle est votre destination préférée ?\n• Avez-vous un budget en tête ?\n\nJe pourrai ainsi vous proposer les meilleures options ! 😊" 
+    {
+      keywords: ["bonjour", "salut", "hey", "hello", "coucou"],
+      reply:
+        "👋 Bonjour ! Je suis Sarah de WeCar, ravie de faire votre connaissance ! \n\nJe vois que vous cherchez une voiture de location ? Pourriez-vous me dire un peu plus sur votre projet de voyage ? Par exemple :\n• Combien de personnes voyagez-vous ?\n• Quelle est votre destination préférée ?\n• Avez-vous un budget en tête ?\n\nJe pourrai ainsi vous proposer les meilleures options ! 😊",
     },
-    { 
-      keywords: ["merci", "thanks", "thank you", "super", "parfait"], 
-      reply: "😊 Mais je vous en prie ! C'est un vrai plaisir de vous aider.\n\nEst-ce qu'il y a autre chose qui vous préoccupe concernant votre location ? Peut-être des questions sur l'assurance, les options supplémentaires, ou les modalités de retrait ?\n\nJe reste à votre disposition pour toutes vos interrogations !" 
+    {
+      keywords: ["merci", "thanks", "thank you", "super", "parfait"],
+      reply:
+        "😊 Mais je vous en prie ! C'est un vrai plaisir de vous aider.\n\nEst-ce qu'il y a autre chose qui vous préoccupe concernant votre location ? Peut-être des questions sur l'assurance, les options supplémentaires, ou les modalités de retrait ?\n\nJe reste à votre disposition pour toutes vos interrogations !",
     },
-    { 
-      keywords: ["aide", "support", "help", "urgence", "problème"], 
-      reply: "🔧 Bien sûr, je suis là pour vous accompagner ! \n\nPour résoudre rapidement votre situation, pourriez-vous me décrire le défi que vous rencontrez ? \n\nEn attendant, voici nos contacts prioritaires :\n📞 Support client : +212 522 543 210\n🆘 Urgences 24h/24 : +212 661 789 456\n\nNous sommes là pour vous !" 
+    {
+      keywords: ["aide", "support", "help", "urgence", "problème"],
+      reply:
+        "🔧 Bien sûr, je suis là pour vous accompagner ! \n\nPour résoudre rapidement votre situation, pourriez-vous me décrire le défi que vous rencontrez ? \n\nEn attendant, voici nos contacts prioritaires :\n📞 Support client : +212 522 543 210\n🆘 Urgences 24h/24 : +212 661 789 456\n\nNous sommes là pour vous !",
     },
-
     // Types de voitures - Approche conversationnelle
-    { 
-      keywords: ["voiture", "véhicule", "auto", "car", "louer"], 
-      reply: "🚗 Excellente idée de louer avec WeCar ! Nous avons justement une super offre en ce moment.\n\nPour vous proposer le véhicule parfait, j'aimerais connaître :\n• Combien serez-vous à voyager ?\n• Préférez-vous un trajet ville ou aventure ?\n• Avez-vous des bagages particuliers ?\n\nCela me permettra de vous guider vers le modèle idéal !" 
+    {
+      keywords: ["voiture", "véhicule", "auto", "car", "louer"],
+      reply:
+        "🚗 Excellente idée de louer avec WeCar ! Nous avons justement une super offre en ce moment.\n\nPour vous proposer le véhicule parfait, j'aimerais connaître :\n• Combien serez-vous à voyager ?\n• Préférez-vous un trajet ville ou aventure ?\n• Avez-vous des bagages particuliers ?\n\nCela me permettra de vous guider vers le modèle idéal !",
     },
-    { 
-      keywords: ["4x4", "suv", "désert", "offroad", "aventure", "merzouga"], 
-      reply: "🏜️ Ah, l'appel du désert ! Les 4x4 sont effectivement nos stars pour les aventures sahariennes ! \n\nLe Toyota Hilux est particulièrement apprécié pour sa fiabilité dans les dunes. En ce moment, nous avons une promotion à 690 DH/jour au lieu de 750 DH pour les réservations de 5 jours et plus.\n\nAvez-vous déjà une date en tête pour votre aventure ?" 
+    {
+      keywords: ["4x4", "suv", "désert", "offroad", "aventure", "merzouga"],
+      reply:
+        "🏜 Ah, l'appel du désert ! Les 4x4 sont effectivement nos stars pour les aventures sahariennes ! \n\nLe Toyota Hilux est particulièrement apprécié pour sa fiabilité dans les dunes. En ce moment, nous avons une promotion à 690 DH/jour au lieu de 750 DH pour les réservations de 5 jours et plus.\n\nAvez-vous déjà une date en tête pour votre aventure ?",
     },
-    { 
-      keywords: ["citadine", "économique", "petite", "city", "budget", "pas cher"], 
-      reply: "💰 Excellente option ! Nos citadines sont parfaites pour les budgets serrés sans compromis le confort.\n\nLa Dacia Sandero à 250 DH/jour est notre best-seller - climatisation, consommation réduite, et assurance tous risques incluse.\n\nPetit conseil : En réservant 3 jours ou plus, vous bénéficiez de la livraison gratuite à votre hôtel ! Ça vous dit ?" 
+    {
+      keywords: ["citadine", "économique", "petite", "city", "budget", "pas cher"],
+      reply:
+        "💰 Excellente option ! Nos citadines sont parfaites pour les budgets serrés sans compromis le confort.\n\nLa Dacia Sandero à 250 DH/jour est notre best-seller - climatisation, consommation réduite, et assurance tous risques incluse.\n\nPetit conseil : En réservant 3 jours ou plus, vous bénéficiez de la livraison gratuite à votre hôtel ! Ça vous dit ?",
     },
-    { 
-      keywords: ["berline", "confort", "familiale", "family", "groupe", "amis"], 
-      reply: "👨‍👩‍👧‍👦 Parfait pour les voyages en famille ou entre amis ! Les berlines offrent cet espace et confort si précieux sur la route.\n\nLa Renault Scénic à 7 places est idéale - grand coffre de 550L, GPS intégré, et sièges enfants disponibles.\n\nJe vous recommande de réserver à l'avance car ces modèles partent très vite, surtout en période de vacances !" 
+    {
+      keywords: ["berline", "confort", "familiale", "family", "groupe", "amis"],
+      reply:
+        "👨‍👩‍👧‍👦 Parfait pour les voyages en famille ou entre amis ! Les berlines offrent cet espace et confort si précieux sur la route.\n\nLa Renault Scénic à 7 places est idéale - grand coffre de 550L, GPS intégré, et sièges enfants disponibles.\n\nJe vous recommande de réserver à l'avance car ces modèles partent très vite, surtout en période de vacances !",
     },
-    { 
-      keywords: ["luxe", "premium", "bmw", "mercedes", "audi", "anniversaire", "mariage"], 
-      reply: "💎 Pour une occasion spéciale, rien de mieux qu'une voiture premium ! \n\nNous avons justement reçu de nouvelles BMW Série 3 - intérieur cuir, système audio premium, et toutes les options confort.\n\nÀ 1200 DH/jour, c'est l'élégance absolue pour marquer le coup. C'est pour célébrer un événement particulier ?" 
+    {
+      keywords: ["luxe", "premium", "bmw", "mercedes", "audi", "anniversaire", "mariage"],
+      reply:
+        "💎 Pour une occasion spéciale, rien de mieux qu'une voiture premium ! \n\nNous avons justement reçu de nouvelles BMW Série 3 - intérieur cuir, système audio premium, et toutes les options confort.\n\nÀ 1200 DH/jour, c'est l'élégance absolue pour marquer le coup. C'est pour célébrer un événement particulier ?",
     },
-
     // Réservation et tarifs - Approche commerciale
-    { 
-      keywords: ["réservation", "réserver", "disponibilité", "book", "commander"], 
-      reply: "📅 Super ! Je suis ravie que vous ayez choisi WeCar pour votre voyage.\n\nPour vérifier les disponibilités exactes, pourriez-vous me préciser :\n• Les dates exactes de location ?\n• Le lieu de retrait (aéroport, agence, hôtel) ?\n• Le type de véhicule qui vous intéresse ?\n\nJe pourrai alors vous confirmer immédiatement les options disponibles !" 
+    {
+      keywords: ["réservation", "réserver", "disponibilité", "book", "commander"],
+      reply:
+        "📅 Super ! Je suis ravie que vous ayez choisi WeCar pour votre voyage.\n\nPour vérifier les disponibilités exactes, pourriez-vous me préciser :\n• Les dates exactes de location ?\n• Le lieu de retrait (aéroport, agence, hôtel) ?\n• Le type de véhicule qui vous intéresse ?\n\nJe pourrai alors vous confirmer immédiatement les options disponibles !",
     },
-    { 
-      keywords: ["prix", "tarif", "coût", "combien", "price", "budget"], 
-      reply: "💵 Je comprends tout à fait - le budget est important dans un projet de voyage !\n\nVoici nos tarifs actuels avec les promotions :\n• 🚗 Citadine : 250-400 DH/jour (-10% si 7+ jours)\n• 🚙 Familiale : 450-600 DH/jour (-15% si 7+ jours)\n• 🏜️ 4x4 Aventure : 700-900 DH/jour (-20% si 7+ jours)\n• 💎 Premium : 1200+ DH/jour\n\nQuelle gamme correspond le mieux à vos besoins ?" 
+    {
+      keywords: ["prix", "tarif", "coût", "combien", "price", "budget"],
+      reply:
+        "💵 Je comprends tout à fait - le budget est important dans un projet de voyage !\n\nVoici nos tarifs actuels avec les promotions :\n• 🚗 Citadine : 250-400 DH/jour (-10% si 7+ jours)\n• 🚙 Familiale : 450-600 DH/jour (-15% si 7+ jours)\n• 🏜 4x4 Aventure : 700-900 DH/jour (-20% si 7+ jours)\n• 💎 Premium : 1200+ DH/jour\n\nQuelle gamme correspond le mieux à vos besoins ?",
     },
-    { 
-      keywords: ["inclut", "équipement", "services", "include", "compris"], 
-      reply: "🛡️ Chez WeCar, nous croyons à la transparence totale ! Voici ce qui est INCLUD dans TOUTES nos locations :\n\n✓ Assurance tous risques (zéro souci)\n✓ Assistance routière 24h/24 (on est là !)\n✓ Kilométrage illimité (roulez librement)\n✓ Nettoyage complet (reçu comme neuf)\n✓ Contrôle technique rigoureux\n\nEt en option : GPS, siège bébé, conducteur... Des questions sur une option particulière ?" 
+    {
+      keywords: ["inclut", "équipement", "services", "include", "compris"],
+      reply:
+        "🛡 Chez WeCar, nous croyons à la transparence totale ! Voici ce qui est INCLUD dans TOUTES nos locations :\n\n✓ Assurance tous risques (zéro souci)\n✓ Assistance routière 24h/24 (on est là !)\n✓ Kilométrage illimité (roulez librement)\n✓ Nettoyage complet (reçu comme neuf)\n✓ Contrôle technique rigoureux\n\nEt en option : GPS, siège bébé, conducteur... Des questions sur une option particulière ?",
     },
-
     // Destinations - Approche inspirante
-    { 
-      keywords: ["maroc", "morocco", "marrakech", "casablanca", "agadir", "fès", "tanger", "destination"], 
-      reply: "🗺️ Le Maroc regorge de merveilles ! Chaque destination a son charme...\n\n• Marrakech : parfaite avec une citadine pour la ville\n• Désert : l'incontournable 4x4 pour Merzouga\n• Côte atlantique : berline confort pour Agadir-Essaouira\n• Montagnes : SUV pour l'Atlas et ses paysages\n\nAvez-vous déjà repéré les endroits que vous souhaitez absolument découvrir ? Je peux vous suggérer des itinéraires !" 
+    {
+      keywords: [
+        "maroc",
+        "morocco",
+        "marrakech",
+        "casablanca",
+        "agadir",
+        "fès",
+        "tanger",
+        "destination",
+      ],
+      reply:
+        "🗺 Le Maroc regorge de merveilles ! Chaque destination a son charme...\n\n• Marrakech : parfaite avec une citadine pour la ville\n• Désert : l'incontournable 4x4 pour Merzouga\n• Côte atlantique : berline confort pour Agadir-Essaouira\n• Montagnes : SUV pour l'Atlas et ses paysages\n\nAvez-vous déjà repéré les endroits que vous souhaitez absolument découvrir ? Je peux vous suggérer des itinéraires !",
     },
-    { 
-      keywords: ["désert", "merzouga", "zagora", "sahara", "dunes", "bivouac"], 
-      reply: "🐫 Le Sahara... Quelle magie ! C'est notre destination coup de cœur ❤️\n\nPour cette aventure, je vous recommande vivement le Toyota Hilux - increvable dans les dunes, climatisation puissante, et kit sable inclus.\n\nPetit conseil local : prévoyez le coucher de soleil à Merzouga - c'est un moment absolument magique ! Vous partez pour combien de jours ?" 
+    {
+      keywords: ["désert", "merzouga", "zagora", "sahara", "dunes", "bivouac"],
+      reply:
+        "🐫 Le Sahara... Quelle magie ! C'est notre destination coup de cœur ❤\n\nPour cette aventure, je vous recommande vivement le Toyota Hilux - increvable dans les dunes, climatisation puissante, et kit sable inclus.\n\nPetit conseil local : prévoyez le coucher de soleil à Merzouga - c'est un moment absolument magique ! Vous partez pour combien de jours ?",
     },
-
     // Questions pratiques
-    { 
-      keywords: ["permis", "document", "papiers", "license", "âge"], 
-      reply: "📋 Pour conduire en toute sérénité, voici les documents nécessaires :\n\n✓ Permis de conduire valide (21 ans minimum)\n✓ Passeport ou carte d'identité\n✓ Carte de crédit pour la caution\n\nLa bonne nouvelle : pas de paperasse compliquée ! Tout se fait en 10 minutes à l'agence.\n\nVous avez votre permis depuis plus d'un an ?" 
+    {
+      keywords: ["permis", "document", "papiers", "license", "âge"],
+      reply:
+        "📋 Pour conduire en toute sérénité, voici les documents nécessaires :\n\n✓ Permis de conduire valide (21 ans minimum)\n✓ Passeport ou carte d'identité\n✓ Carte de crédit pour la caution\n\nLa bonne nouvelle : pas de paperasse compliquée ! Tout se fait en 10 minutes à l'agence.\n\nVous avez votre permis depuis plus d'un an ?",
     },
-    { 
-      keywords: ["enfant", "famille", "siège", "baby", "child", "bébé"], 
-      reply: "👶 Voyager avec des enfants, c'est toute une organisation ! Nous sommes là pour vous simplifier la vie.\n\nSièges enfant disponibles :\n• Siège bébé (0-3 ans) : 40 DH/jour\n• Réhausseur (4-7 ans) : 30 DH/jour\n\nConseil : Réservez-les à l'avance pour être certain de les avoir. Combien avez-vous d'enfants et quel âge ont-ils ?" 
+    {
+      keywords: ["enfant", "famille", "siège", "baby", "child", "bébé"],
+      reply:
+        "👶 Voyager avec des enfants, c'est toute une organisation ! Nous sommes là pour vous simplifier la vie.\n\nSièges enfant disponibles :\n• Siège bébé (0-3 ans) : 40 DH/jour\n• Réhausseur (4-7 ans) : 30 DH/jour\n\nConseil : Réservez-les à l'avance pour être certain de les avoir. Combien avez-vous d'enfants et quel âge ont-ils ?",
     },
-    { 
-      keywords: ["téléphone", "contact", "urgence", "phone", "appeler", "whatsapp"], 
-      reply: "📞 Bien sûr ! Voici comment nous joindre facilement :\n\n• 📱 Service client : +212 522 543 210\n• 💬 WhatsApp : +212 661 789 456 (réponse instantanée)\n• 🆘 Urgences 24h/24 : +212 522 543 211\n• 📧 Email : bonjour@wecar.com\n\nNous sommes disponibles du lundi au dimanche de 7h à 22h. N'hésitez surtout pas !" 
+    {
+      keywords: ["téléphone", "contact", "urgence", "phone", "appeler", "whatsapp"],
+      reply:
+        "📞 Bien sûr ! Voici comment nous joindre facilement :\n\n• 📱 Service client : +212 522 543 210\n• 💬 WhatsApp : +212 661 789 456 (réponse instantanée)\n• 🆘 Urgences 24h/24 : +212 522 543 211\n• 📧 Email : bonjour@wecar.com\n\nNous sommes disponibles du lundi au dimanche de 7h à 22h. N'hésitez surtout pas !",
     },
-
     // Promotions - Approche engageante
-    { 
-      keywords: ["promo", "réduction", "offre", "code", "discount", "économiser"], 
-      reply: "🎁 Vous tombez bien ! Nous avons justement lancé notre offre spéciale \"AVENTURE 2024\" :\n\n🔥 -20% sur toutes les locations de 7 jours ou plus\n🎯 Livraison GRATUITE dans tous les aéroports\n💎 1 option gratuite au choix (GPS ou siège enfant)\n\nCette offre est valable jusqu'à la fin du mois. Ça vous intéresse pour vos dates ?" 
+    {
+      keywords: ["promo", "réduction", "offre", "code", "discount", "économiser"],
+      reply:
+        "🎁 Vous tombez bien ! Nous avons justement lancé notre offre spéciale \"AVENTURE 2024\" :\n\n🔥 -20% sur toutes les locations de 7 jours ou plus\n🎯 Livraison GRATUITE dans tous les aéroports\n💎 1 option gratuite au choix (GPS ou siège enfant)\n\nCette offre est valable jusqu'à la fin du mois. Ça vous intéresse pour vos dates ?",
     },
-    { 
-      keywords: ["longue durée", "mois", "semaine", "long term", "étendu"], 
-      reply: "📅 Excellente idée ! Plus la location est longue, plus l'économie est belle :\n\n• 2 semaines : -20% sur le tarif journalier\n• 3 semaines : -25% + option GPS offerte\n• 1 mois complet : -30% + livraison gratuite partout\n\nCes forfaits incluent bien sûr l'assurance tous risques et l'assistance 24h/24. Vous pensez à quelle durée ?" 
+    {
+      keywords: ["longue durée", "mois", "semaine", "long term", "étendu"],
+      reply:
+        "📅 Excellente idée ! Plus la location est longue, plus l'économie est belle :\n\n• 2 semaines : -20% sur le tarif journalier\n• 3 semaines : -25% + option GPS offerte\n• 1 mois complet : -30% + livraison gratuite partout\n\nCes forfaits incluent bien sûr l'assurance tous risques et l'assistance 24h/24. Vous pensez à quelle durée ?",
     },
-    { 
-      keywords: ["livraison", "aéroport", "hôtel", "delivery", "domicile"], 
-      reply: "🚚 Oui, absolument ! Nous livrons GRATUITEMENT votre véhicule :\n\n✓ Dans tous les aéroports marocains\n✓ Dans les gares principales\n✓ Dans les hôtels partenaires\n\nPour les autres adresses, un petit supplément de 50-100 DH selon la distance.\n\nOù souhaiteriez-vous que nous vous apportions votre voiture ?" 
-    }
+    {
+      keywords: ["livraison", "aéroport", "hôtel", "delivery", "domicile"],
+      reply:
+        "🚚 Oui, absolument ! Nous livrons GRATUITEMENT votre véhicule :\n\n✓ Dans tous les aéroports marocains\n✓ Dans les gares principales\n✓ Dans les hôtels partenaires\n\nPour les autres adresses, un petit supplément de 50-100 DH selon la distance.\n\nOù souhaiteriez-vous que nous vous apportions votre voiture ?",
+    },
   ];
 
   // === SIMILARITÉ (tolérance fautes) ===
@@ -130,7 +159,7 @@ export default function Bots() {
 
     // Détection du contexte et réponse personnalisée
     if ((text.includes("4x4") || text.includes("désert")) && !text.includes("prix")) {
-      return "🏜️ Ah, une âme d'aventurier ! Les 4x4 sont parfaits pour explorer le Sahara en toute liberté.\n\nLe Toyota Hilux à 690 DH/jour (promo actuelle) est notre valeur sûre - fiable, confortable, et équipé pour le sable.\n\nAvez-vous déjà une idée des dates pour votre escapade saharienne ?";
+      return "🏜 Ah, une âme d'aventurier ! Les 4x4 sont parfaits pour explorer le Sahara en toute liberté.\n\nLe Toyota Hilux à 690 DH/jour (promo actuelle) est notre valeur sûre - fiable, confortable, et équipé pour le sable.\n\nAvez-vous déjà une idée des dates pour votre escapade saharienne ?";
     }
 
     if (text.includes("économique") || (text.includes("pas cher") && text.includes("voiture"))) {
@@ -169,14 +198,14 @@ export default function Bots() {
   // === EFFET D'ÉCRITURE NATUREL ===
   const typeMessage = async (message) => {
     setIsTyping(true);
-    
+
     const botMessageIndex = messages.length;
-    setMessages(prev => [...prev, { from: "bot", text: "" }]);
+    setMessages((prev) => [...prev, { from: "bot", text: "", at: Date.now() }]);
 
     let i = 0;
-    await new Promise(resolve => {
+    await new Promise((resolve) => {
       const typingInterval = setInterval(() => {
-        setMessages(prev => {
+        setMessages((prev) => {
           const newMessages = [...prev];
           if (newMessages[botMessageIndex]) {
             newMessages[botMessageIndex].text = message.substring(0, i + 1);
@@ -198,13 +227,13 @@ export default function Bots() {
   const sendMessage = async () => {
     if (!input.trim() || isTyping) return;
 
-    const userMessage = { from: "user", text: input };
-    setMessages(prev => [...prev, userMessage]);
+    const userMessage = { from: "user", text: input, at: Date.now() };
+    setMessages((prev) => [...prev, userMessage]);
     const userInput = input;
     setInput("");
 
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
     const reply = generateSmartReply(userInput);
     await typeMessage(reply);
   };
@@ -221,8 +250,13 @@ export default function Bots() {
     const handleClickOutside = (event) => {
       const chatContainer = document.getElementById("chat-container");
       const toggleBtn = document.getElementById("chat-toggle");
-      
-      if (isOpen && chatContainer && !chatContainer.contains(event.target) && event.target !== toggleBtn) {
+
+      if (
+        isOpen &&
+        chatContainer &&
+        !chatContainer.contains(event.target) &&
+        event.target !== toggleBtn
+      ) {
         setIsOpen(false);
       }
     };
@@ -233,6 +267,7 @@ export default function Bots() {
     };
   }, [isOpen]);
 
+  // === RENDER ===
   return (
     <>
       {/* Bouton de chat */}
@@ -259,10 +294,10 @@ export default function Bots() {
           transition: "all 0.3s ease",
         }}
         onMouseEnter={(e) => {
-          e.target.style.transform = "scale(1.1)";
+          e.currentTarget.style.transform = "scale(1.1)";
         }}
         onMouseLeave={(e) => {
-          e.target.style.transform = "scale(1)";
+          e.currentTarget.style.transform = "scale(1)";
         }}
       >
         💬
@@ -285,7 +320,7 @@ export default function Bots() {
             boxShadow: "0 10px 40px rgba(0,0,0,0.15)",
             overflow: "hidden",
             zIndex: 999,
-            border: `1px solid ${wecarColors.light}`,
+            border: 1px solid ${wecarColors.light},
           }}
         >
           {/* En-tête */}
@@ -295,7 +330,7 @@ export default function Bots() {
               color: "#fff",
               padding: "16px",
               fontSize: "15px",
-              fontWeight: "600",
+              fontWeight: 600,
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -308,17 +343,19 @@ export default function Bots() {
                 <div style={{ fontSize: "11px", opacity: 0.9 }}>Conseillère locations</div>
               </div>
             </div>
-            <span style={{ 
-              fontSize: "10px", 
-              background: "rgba(255,255,255,0.25)", 
-              padding: "4px 8px", 
-              borderRadius: "10px",
-            }}>
+            <span
+              style={{
+                fontSize: "10px",
+                background: "rgba(255,255,255,0.25)",
+                padding: "4px 8px",
+                borderRadius: "10px",
+              }}
+            >
               En ligne
             </span>
           </div>
 
-          {/* Zone de conversation - ORGANISATION INVERSEE */}
+          {/* Zone de conversation - USER à droite, BOT à gauche */}
           <div
             ref={chatBoxRef}
             style={{
@@ -332,78 +369,83 @@ export default function Bots() {
               background: "#f8f9fa",
             }}
           >
-            {messages.map((msg, i) => (
-              <div
-                key={i}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  // CLIENT À DROITE, ROBOT À GAUCHE
-                  alignItems: msg.from === "user" ? "flex-end" : "flex-start",
-                }}
-              >
-                {/* Indicateur d'expéditeur */}
+            {messages.map((msg, i) => {
+              const isUser = msg.from === "user";
+              return (
                 <div
+                  key={${msg.at}-${i}}
                   style={{
-                    fontSize: "11px",
-                    color: "#999",
-                    marginBottom: "4px",
                     display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    // Alignement cohérent avec les messages
-                    alignSelf: msg.from === "user" ? "flex-end" : "flex-start",
-                    padding: msg.from === "user" ? "0 8px 0 0" : "0 0 0 8px",
+                    flexDirection: "column",
+                    alignItems: isUser ? "flex-end" : "flex-start",
                   }}
                 >
-                  <span style={{ 
-                    color: msg.from === "user" ? wecarColors.primary : "#999",
-                    fontSize: "8px"
-                  }}>●</span>
-                  <span>{msg.from === "user" ? "Vous" : "Sarah"}</span>
-                  <span style={{ fontSize: "10px" }}>
-                    {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
+                  {/* Ligne meta (nom + heure) */}
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      color: wecarColors.subtle,
+                      marginBottom: "4px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      alignSelf: isUser ? "flex-end" : "flex-start",
+                      padding: isUser ? "0 8px 0 0" : "0 0 0 8px",
+                    }}
+                  >
+                    <span
+                      style={{ color: isUser ? wecarColors.primary : "#9ca3af", fontSize: "8px" }}
+                    >
+                      ●
+                    </span>
+                    <span>{isUser ? "Vous" : "Sarah"}</span>
+                    <span style={{ fontSize: "10px" }}>
+                      {msg.at ? new Date(msg.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}
+                    </span>
+                  </div>
 
-                {/* Bulle de message */}
-                <div
-                  style={{
-                    color: wecarColors.messageText,
-                    whiteSpace: "pre-line",
-                    lineHeight: "1.5",
-                    fontSize: "14px",
-                    fontWeight: "400",
-                    textAlign: "left",
-                    maxWidth: "85%",
-                    // STYLES DIFFÉRENTS POUR CLIENT ET ROBOT
-                    background: msg.from === "user" ? wecarColors.light : "#fff",
-                    padding: "12px 16px",
-                    borderRadius: msg.from === "user" ? "18px 4px 18px 18px" : "4px 18px 18px 18px",
-                    border: msg.from === "user" ? "none" : `1px solid ${wecarColors.light}`,
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-                    // Positionnement clair
-                    alignSelf: msg.from === "user" ? "flex-end" : "flex-start",
-                  }}
-                >
-                  {msg.text}
-                  {isTyping && i === messages.length - 1 && (
-                    <span style={{ 
-                      marginLeft: "2px",
-                      animation: "blink 1s infinite",
-                      color: wecarColors.primary
-                    }}>|</span>
-                  )}
+                  {/* Message */}
+                  <div
+                    style={{
+                      color: wecarColors.messageText,
+                      whiteSpace: "pre-line",
+                      lineHeight: 1.55,
+                      fontSize: "14px",
+                      fontWeight: 400,
+                      textAlign: "left",
+                      maxWidth: "85%",
+                      // USER: bulle verte claire | BOT: style ChatGPT (sans fond, sans bordure)
+                      background: isUser ? wecarColors.light : "transparent",
+                      padding: isUser ? "12px 16px" : 0,
+                      borderRadius: isUser ? "18px 4px 18px 18px" : 0,
+                      border: isUser ? "none" : "none",
+                      boxShadow: isUser ? "0 2px 8px rgba(0,0,0,0.08)" : "none",
+                      alignSelf: isUser ? "flex-end" : "flex-start",
+                    }}
+                  >
+                    {msg.text}
+                    {isTyping && i === messages.length - 1 && (
+                      <span
+                        style={{
+                          marginLeft: 2,
+                          animation: "blink 1s infinite",
+                          color: wecarColors.primary,
+                        }}
+                      >
+                        |
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Zone de saisie */}
           <div
             style={{
               display: "flex",
-              borderTop: `1px solid ${wecarColors.light}`,
+              borderTop: 1px solid ${wecarColors.light},
               padding: "12px",
               background: "#fff",
               gap: "8px",
@@ -418,7 +460,7 @@ export default function Bots() {
               disabled={isTyping}
               style={{
                 flex: 1,
-                border: `1px solid ${wecarColors.light}`,
+                border: 1px solid ${wecarColors.light},
                 outline: "none",
                 padding: "10px 16px",
                 borderRadius: "24px",
@@ -427,17 +469,18 @@ export default function Bots() {
                 transition: "all 0.3s ease",
               }}
               onFocus={(e) => {
-                e.target.style.background = "#fff";
-                e.target.style.borderColor = wecarColors.primary;
+                e.currentTarget.style.background = "#fff";
+                e.currentTarget.style.borderColor = wecarColors.primary;
               }}
               onBlur={(e) => {
-                e.target.style.background = "#f8f9fa";
-                e.target.style.borderColor = wecarColors.light;
+                e.currentTarget.style.background = "#f8f9fa";
+                e.currentTarget.style.borderColor = wecarColors.light;
               }}
             />
             <button
               onClick={sendMessage}
               disabled={isTyping || !input.trim()}
+              title="Envoyer"
               style={{
                 border: "none",
                 background: wecarColors.gradient,
@@ -461,14 +504,14 @@ export default function Bots() {
         </section>
       )}
 
-      {/* Animation de frappe */}
+      {/* Animation de frappe + responsive */}
       <style>
         {`
           @keyframes blink {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.3; }
           }
-          
+
           @media (max-width: 480px) {
             #chat-container {
               width: 90% !important;
