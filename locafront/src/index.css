@@ -505,15 +505,15 @@ section.herohbnb {
 }
 @media (max-width: 768px) {
    section.herohbnb {
-      margin-top: -50px; /* adjust if needed */
-      height: 1000px; /* set height to 1000px on mobile */
+      margin-top: -66px; /* adjust if needed */
+      height: 700px; /* set height to 1000px on mobile */
    }
 }
 
 @media (max-width: 480px) {
    section.herohbnb {
-      margin-top: -30px;
-      height: 1000px; /* keep 1000px for very small screens too */
+      margin-top: -66px;
+      height: 700px; /* keep 1000px for very small screens too */
    }
 }
 

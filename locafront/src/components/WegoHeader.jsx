@@ -44,9 +44,9 @@ export default function WegoHeader() {
       <header className="wego-header">
         <nav className="wego-nav" aria-label="Navigation principale">
           <div className="wego-brand">
-            <div className="wego-logo">W</div>
+            <div className="wego-logo">W.</div>
             <Link to="/" onClick={closeMenu} className="wego-title">
-              WegoPro <span>Voyages d'affaires</span>
+              WegoRent
             </Link>
           </div>
 
@@ -92,7 +92,7 @@ export default function WegoHeader() {
       {/* Mini header sur scroll */}
       {scrollHeader && (
         <div className="wego-mini-header">
-          <div className="wego-mini-logo">W</div>
+          <div className="wego-mini-logo">W.</div>
           <Link to="/reserver" className="wego-mini-btn">Réserver</Link>
         </div>
       )}
