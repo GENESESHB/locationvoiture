@@ -1,35 +1,30 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
-const multer = require('multer');
-const path = require('path');
+const upload = require('../config/cloudinary'); // ✅ use Cloudinary upload instead of local multer
 
-// Set up multer storage
-const storage = multer.diskStorage({
-  destination: function(req, file, cb) {
-    cb(null, 'uploads/'); // folder to save uploaded files
-  },
-  filename: function(req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({ storage });
-
+// 📤 Partner Registration Route
 router.post('/demande', upload.single('logoEntreprise'), async (req, res) => {
   try {
     const { name, entreprise, number, email, password, country, city } = req.body;
-    const logoEntreprise = req.file ? `/uploads/${req.file.filename}` : ''; // Use uploaded file
+    const logoEntreprise = req.file ? req.file.path : ''; // ✅ Cloudinary gives a hosted URL
 
+    // Check if email already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'Email already exists' });
     }
 
+    // Create new user
     const newUser = new User({
-      name, entreprise, number, email, password,
-      logoEntreprise, country, city,
+      name,
+      entreprise,
+      number,
+      email,
+      password,
+      logoEntreprise,
+      country,
+      city,
       ip: req.ip
     });
 
@@ -45,7 +40,7 @@ router.post('/demande', upload.single('logoEntreprise'), async (req, res) => {
   }
 });
 
-// 2️⃣ Admin lists pending demandes
+// 🕓 Admin lists pending demandes
 router.get('/pending', async (req, res) => {
   try {
     const pendingUsers = await User.find({ status: 'pending' });
@@ -55,7 +50,7 @@ router.get('/pending', async (req, res) => {
   }
 });
 
-// 3️⃣ Admin approves a user
+// ✅ Admin approves a user
 router.put('/approve/:id', async (req, res) => {
   try {
     const user = await User.findByIdAndUpdate(
@@ -70,7 +65,7 @@ router.put('/approve/:id', async (req, res) => {
   }
 });
 
-// 4️⃣ Admin rejects a user
+// ❌ Admin rejects a user
 router.put('/reject/:id', async (req, res) => {
   try {
     const user = await User.findByIdAndUpdate(
