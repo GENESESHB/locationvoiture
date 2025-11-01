@@ -5,6 +5,7 @@ const axios = require('axios');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const userRoutes = require('./routes/users');
+const path = require('path');
 
 const app = express();
 app.use(cors());
@@ -100,6 +101,7 @@ app.get('/whoami/place', async (req, res) => {
     res.status(500).json({ error: 'Server error', details: err.message });
   }
 });
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // 👤 User routes
 app.use('/users', userRoutes);

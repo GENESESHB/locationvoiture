@@ -1,22 +1,38 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const multer = require('multer');
+const path = require('path');
 
-// routes/users.js
-router.post('/demande', async (req, res) => {
+// Set up multer storage
+const storage = multer.diskStorage({
+  destination: function(req, file, cb) {
+    cb(null, 'uploads/'); // folder to save uploaded files
+  },
+  filename: function(req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage });
+
+router.post('/demande', upload.single('logoEntreprise'), async (req, res) => {
   try {
-    const { name, entreprise, number, email, password, logoEntreprise, country, city } = req.body;
+    const { name, entreprise, number, email, password, country, city } = req.body;
+    const logoEntreprise = req.file ? `/uploads/${req.file.filename}` : ''; // Use uploaded file
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'Email already exists' });
     }
 
-    const newUser = new User({ 
-      name, entreprise, number, email, password, 
+    const newUser = new User({
+      name, entreprise, number, email, password,
       logoEntreprise, country, city,
       ip: req.ip
     });
+
     await newUser.save();
 
     res.status(201).json({
