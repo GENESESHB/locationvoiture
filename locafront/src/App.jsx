@@ -5,10 +5,7 @@ import CarHighlights from './components/CarHighlights'
 import CarList from './components/CarList'
 import UserLocation from './components/UserLocation'
 import Bots from './components/bots'
-<<<<<<< HEAD
-=======
-import Partner from './components/Partner';
->>>>>>> 69ecfe8 (aaaddd)
+import Partner from './components/Partner' // ✅ keep Partner import
 
 // Import your new pages
 import About from './pages/About'
@@ -89,10 +86,7 @@ export default function App() {
         <Route path="/support" element={<Support />} />
         <Route path="/experience" element={<Experience />} />
         <Route path="/booking" element={<Booking />} />
-<<<<<<< HEAD
-=======
-        <Route path="/partner" element={<Partner />} />
->>>>>>> 69ecfe8 (aaaddd)
+        <Route path="/partner" element={<Partner />} /> {/* ✅ keep Partner route */}
       </Routes>
     </Router>
   )
