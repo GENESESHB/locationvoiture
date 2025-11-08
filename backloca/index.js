@@ -4,10 +4,14 @@ const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 const mongoose = require('mongoose');
-const userRoutes = require('./routes/users');
 const path = require('path');
 
+const userRoutes = require('./routes/userRoutes');
+const usersRoutes = require('./routes/users');
+const authRoutes = require('./routes/authRoutes');
+
 const app = express();
+
 app.use(cors());
 app.use(express.json()); // Parse JSON in POST requests
 app.set('trust proxy', true); // Important if behind a proxy
@@ -38,20 +42,17 @@ function getRequestIp(req) {
 }
 
 async function fetchPublicIp() {
-  // Use ipify to get the server-visible public IP (useful in dev)
   const res = await axios.get('https://api.ipify.org?format=json', { timeout: 5000 });
   return res.data.ip;
 }
 
 async function ipGeolocate(ip) {
-  // ipapi.co returns city, region, latitude, longitude etc.
   const url = ip && ip !== '127.0.0.1' ? `https://ipapi.co/${ip}/json/` : 'https://ipapi.co/json/';
   const res = await axios.get(url, { timeout: 5000 });
   return res.data;
 }
 
 async function reverseGeocode(lat, lon) {
-  // Nominatim reverse geocoding (OpenStreetMap)
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&addressdetails=1`;
   const res = await axios.get(url, {
     timeout: 5000,
@@ -68,8 +69,6 @@ async function reverseGeocode(lat, lon) {
 app.get('/whoami/place', async (req, res) => {
   try {
     let ip = getRequestIp(req);
-
-    // If the request comes from localhost, fetch public IP (dev case)
     if (!ip || ip === '127.0.0.1' || ip === '::1') {
       ip = await fetchPublicIp();
     }
@@ -101,14 +100,16 @@ app.get('/whoami/place', async (req, res) => {
     res.status(500).json({ error: 'Server error', details: err.message });
   }
 });
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // 👤 User routes
-app.use('/users', userRoutes);
+app.use('/users', usersRoutes); // For registration etc.
+app.use('/api/user', userRoutes); // For user controller routes
+app.use('/api/auth', authRoutes);
 
 // --------------------
 // Start Server
 // --------------------
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`🚀 Backend running on http://localhost:${PORT}`));
-

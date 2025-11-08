@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcryptjs'); // ✅ For password hashing
 const User = require('../models/User');
-const upload = require('../config/cloudinary'); // ✅ use Cloudinary upload instead of local multer
+const upload = require('../config/cloudinary'); // ✅ Cloudinary upload
 
 // 📤 Partner Registration Route
 router.post('/demande', upload.single('logoEntreprise'), async (req, res) => {
@@ -15,13 +16,17 @@ router.post('/demande', upload.single('logoEntreprise'), async (req, res) => {
       return res.status(400).json({ success: false, message: 'Email already exists' });
     }
 
-    // Create new user
+    // ✅ Hash the password before saving
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // ✅ Create new user with hashed password
     const newUser = new User({
       name,
       entreprise,
       number,
       email,
-      password,
+      password: hashedPassword, // Store hashed password
       logoEntreprise,
       country,
       city,
@@ -33,52 +38,21 @@ router.post('/demande', upload.single('logoEntreprise'), async (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Demande submitted successfully! Waiting for admin approval.',
-      user: newUser
+      user: {
+        _id: newUser._id,
+        name: newUser.name,
+        entreprise: newUser.entreprise,
+        email: newUser.email,
+        logoEntreprise: newUser.logoEntreprise,
+        country: newUser.country,
+        city: newUser.city
+      }
     });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// 🕓 Admin lists pending demandes
-router.get('/pending', async (req, res) => {
-  try {
-    const pendingUsers = await User.find({ status: 'pending' });
-    res.json({ success: true, pendingUsers });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// ✅ Admin approves a user
-router.put('/approve/:id', async (req, res) => {
-  try {
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { status: 'approved' },
-      { new: true }
-    );
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-    res.json({ success: true, message: 'User approved', user });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// ❌ Admin rejects a user
-router.put('/reject/:id', async (req, res) => {
-  try {
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { status: 'rejected' },
-      { new: true }
-    );
-    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-    res.json({ success: true, message: 'User rejected', user });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
 module.exports = router;
+
 
