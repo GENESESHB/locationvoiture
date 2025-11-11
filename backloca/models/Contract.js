@@ -34,7 +34,7 @@ const contractSchema = new mongoose.Schema({
     },
     partnerStatus: {
       type: String,
-      enum: ['pending', 'active', 'suspended', 'approved'], // ADDED 'approved'
+      enum: ['pending', 'active', 'suspended', 'approved'],
       default: 'pending'
     },
     partnerRole: {
@@ -197,19 +197,19 @@ const contractSchema = new mongoose.Schema({
       default: 0
     },
     impot2026: {
-      type: Boolean, // CHANGED from String to Boolean
+      type: Boolean,
       default: false
     },
     impot2027: {
-      type: Boolean, // CHANGED from String to Boolean
+      type: Boolean,
       default: false
     },
     impot2028: {
-      type: Boolean, // CHANGED from String to Boolean
+      type: Boolean,
       default: false
     },
     impot2029: {
-      type: Boolean, // CHANGED from String to Boolean
+      type: Boolean,
       default: false
     },
     assuranceStartDate: {
@@ -221,7 +221,7 @@ const contractSchema = new mongoose.Schema({
       default: null
     },
     vidangeInterval: {
-      type: String, // KEEP as String since you're sending string "10000"
+      type: String,
       trim: true,
       default: ''
     },
@@ -230,8 +230,8 @@ const contractSchema = new mongoose.Schema({
       trim: true,
       default: ''
     },
-    dommages: { // CHANGED: Now accepts array of strings
-      type: [String],
+    dommages: {
+      type: [String], // Array of strings for multiple damages
       default: []
     },
     available: {
@@ -380,6 +380,15 @@ contractSchema.methods.isActive = function() {
   return this.rentalInfo.startDateTime <= now && this.rentalInfo.endDateTime >= now && this.status === 'active';
 };
 
+// Method to check if contract can be cancelled
+contractSchema.methods.canBeCancelled = function() {
+  const now = new Date();
+  const startDate = new Date(this.rentalInfo.startDateTime);
+  const timeDiff = startDate.getTime() - now.getTime();
+  const hoursDiff = timeDiff / (1000 * 60 * 60);
+  return hoursDiff >= 24;
+};
+
 // Static method to find contracts by partner
 contractSchema.statics.findByPartner = function(partnerId) {
   return this.find({ 'partnerInfo.partnerId': partnerId });
@@ -393,6 +402,22 @@ contractSchema.statics.findActive = function() {
     'rentalInfo.endDateTime': { $gte: now },
     status: 'active'
   });
+};
+
+// Static method to find overlapping contracts
+contractSchema.statics.findOverlappingContracts = function(vehicleId, startDateTime, endDateTime, excludeContractId = null) {
+  const query = {
+    'vehicleInfo.vehicleId': vehicleId,
+    'rentalInfo.startDateTime': { $lt: new Date(endDateTime) },
+    'rentalInfo.endDateTime': { $gt: new Date(startDateTime) },
+    status: { $in: ['pending', 'active'] }
+  };
+
+  if (excludeContractId) {
+    query._id = { $ne: excludeContractId };
+  }
+
+  return this.find(query);
 };
 
 const Contract = mongoose.model('Contract', contractSchema);
