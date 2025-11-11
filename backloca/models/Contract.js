@@ -1,165 +1,342 @@
 const mongoose = require('mongoose');
 
 const contractSchema = new mongoose.Schema({
-  // Partner information (auto-populated from authenticated user)
-  partnerId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
-  partnerName: {
-    type: String,
-    required: true
-  },
-  partnerEmail: {
-    type: String,
-    required: true
-  },
-
-  // Client information
-  clientLastName: {
-    type: String,
-    required: [true, 'Le nom du client est obligatoire'],
-    trim: true
-  },
-  clientFirstName: {
-    type: String,
-    required: [true, 'Le prénom du client est obligatoire'],
-    trim: true
-  },
-  clientBirthDate: {
-    type: Date,
-    required: [true, 'La date de naissance du client est obligatoire']
-  },
-  clientPhone: {
-    type: String,
-    required: [true, 'Le téléphone du client est obligatoire'],
-    trim: true
-  },
-  clientAddress: {
-    type: String,
-    required: [true, 'L\'adresse du client est obligatoire'],
-    trim: true
-  },
-  clientPassport: {
-    type: String,
-    trim: true,
-    sparse: true // Allows multiple nulls
-  },
-  clientCIN: {
-    type: String,
-    trim: true,
-    sparse: true // Allows multiple nulls
-  },
-  clientLicenseNumber: {
-    type: String,
-    required: [true, 'Le numéro de permis du client est obligatoire'],
-    trim: true
-  },
-  clientLicenseIssueDate: {
-    type: Date,
-    required: [true, 'La date de délivrance du permis est obligatoire']
-  },
-
-  // Second driver information (optional)
-  secondDriverLastName: {
-    type: String,
-    trim: true,
-    default: ''
-  },
-  secondDriverFirstName: {
-    type: String,
-    trim: true,
-    default: ''
-  },
-  secondDriverLicenseNumber: {
-    type: String,
-    trim: true,
-    default: ''
-  },
-  secondDriverLicenseIssueDate: {
-    type: Date,
-    default: null
-  },
-
-  // Vehicle information (reference to Vehicle model)
-  vehicleId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Vehicle',
-    required: [true, 'La sélection d\'un véhicule est obligatoire']
-  },
-
-  // Inherited vehicle details (for easy access and reporting)
-  vehicleName: String,
-  vehicleType: String,
-  vehicleBoiteVitesse: String,
-  vehicleDescription: String,
-  vehiclePricePerDay: Number,
-  vehicleMarque: String,
-  vehicleModele: String,
-  vehicleAnnee: Number,
-  vehicleCouleur: String,
-  vehicleCarburant: String,
-  vehiclePlaqueImmatriculation: String,
-
-  // Rental information
-  startDateTime: {
-    type: Date,
-    required: [true, 'La date et heure de début sont obligatoires']
-  },
-  endDateTime: {
-    type: Date,
-    required: [true, 'La date et heure de fin sont obligatoires'],
-    validate: {
-      validator: function(value) {
-        return value > this.startDateTime;
-      },
-      message: 'La date de fin doit être après la date de début'
+  // 1. Partner/User Information (Complete from auth user)
+  partnerInfo: {
+    partnerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: 'User'
+    },
+    partnerName: {
+      type: String,
+      required: true
+    },
+    partnerEmail: {
+      type: String,
+      required: true
+    },
+    partnerPhone: {
+      type: String,
+      required: true
+    },
+    partnerLogo: {
+      type: String,
+      default: ''
+    },
+    partnerCountry: {
+      type: String,
+      required: true
+    },
+    partnerCity: {
+      type: String,
+      required: true
+    },
+    partnerStatus: {
+      type: String,
+      enum: ['pending', 'active', 'suspended', 'approved'], // ADDED 'approved'
+      default: 'pending'
+    },
+    partnerRole: {
+      type: String,
+      enum: ['agence', 'admin', 'user'],
+      default: 'agence'
+    },
+    partnerCreatedAt: {
+      type: Date,
+      required: true
+    },
+    partnerUpdatedAt: {
+      type: Date,
+      required: true
     }
   },
-  startLocation: {
-    type: String,
-    required: [true, 'Le lieu de départ est obligatoire'],
-    trim: true
-  },
-  endLocation: {
-    type: String,
-    required: [true, 'Le lieu de retour est obligatoire'],
-    trim: true
+
+  // 2. Client/Locataire Information
+  clientInfo: {
+    lastName: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    firstName: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    birthDate: {
+      type: Date,
+      required: true
+    },
+    phone: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    address: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    passport: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    cin: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    licenseNumber: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    licenseIssueDate: {
+      type: Date,
+      required: true
+    }
   },
 
-  // Price information
-  prixParJour: {
-    type: Number,
-    required: [true, 'Le prix par jour est obligatoire'],
-    min: [0, 'Le prix ne peut pas être négatif']
-  },
-  prixTotal: {
-    type: Number,
-    required: true,
-    min: 0
+  // 3. Second Driver Information
+  secondDriverInfo: {
+    lastName: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    firstName: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    licenseNumber: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    licenseIssueDate: {
+      type: Date,
+      default: null
+    }
   },
 
-  // Contract status
+  // 4. Complete Vehicle Information
+  vehicleInfo: {
+    vehicleId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: 'Vehicle'
+    },
+    name: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    type: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    boiteVitesse: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    description: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    image: {
+      type: String,
+      default: ''
+    },
+    pricePerDay: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+    carburant: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    niveauReservoir: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    radio: {
+      type: Boolean,
+      default: false
+    },
+    gps: {
+      type: Boolean,
+      default: false
+    },
+    mp3: {
+      type: Boolean,
+      default: false
+    },
+    cd: {
+      type: Boolean,
+      default: false
+    },
+    nombreCles: {
+      type: Number,
+      default: 1
+    },
+    kmDepart: {
+      type: Number,
+      default: 0
+    },
+    kmRetour: {
+      type: Number,
+      default: 0
+    },
+    impot2026: {
+      type: Boolean, // CHANGED from String to Boolean
+      default: false
+    },
+    impot2027: {
+      type: Boolean, // CHANGED from String to Boolean
+      default: false
+    },
+    impot2028: {
+      type: Boolean, // CHANGED from String to Boolean
+      default: false
+    },
+    impot2029: {
+      type: Boolean, // CHANGED from String to Boolean
+      default: false
+    },
+    assuranceStartDate: {
+      type: Date,
+      default: null
+    },
+    assuranceEndDate: {
+      type: Date,
+      default: null
+    },
+    vidangeInterval: {
+      type: String, // KEEP as String since you're sending string "10000"
+      trim: true,
+      default: ''
+    },
+    remarques: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    dommages: { // CHANGED: Now accepts array of strings
+      type: [String],
+      default: []
+    },
+    available: {
+      type: Boolean,
+      default: true
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    },
+    updatedAt: {
+      type: Date,
+      default: Date.now
+    }
+  },
+
+  // 5. Rental Information
+  rentalInfo: {
+    startDateTime: {
+      type: Date,
+      required: true
+    },
+    endDateTime: {
+      type: Date,
+      required: true
+    },
+    startLocation: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    endLocation: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    prixParJour: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+    prixTotal: {
+      type: Number,
+      required: true,
+      min: 0
+    },
+    rentalDays: {
+      type: Number,
+      required: true,
+      min: 1
+    }
+  },
+
+  // 6. Contract Metadata
+  contractMetadata: {
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      ref: 'User'
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'active', 'completed', 'cancelled'],
+      default: 'pending'
+    }
+  },
+
+  // 7. Contract Status (Main)
   status: {
     type: String,
-    enum: {
-      values: ['pending', 'confirmed', 'active', 'completed', 'cancelled'],
-      message: 'Le statut doit être: pending, confirmed, active, completed, ou cancelled'
-    },
+    enum: ['pending', 'active', 'completed', 'cancelled', 'archived'],
     default: 'pending'
   },
 
-  // Additional fields for contract management
-  durationDays: {
-    type: Number,
-    required: true
-  },
+  // 8. Additional Fields for Tracking
   contractNumber: {
     type: String,
     unique: true,
     sparse: true
   },
+  signatureClient: {
+    type: String,
+    default: ''
+  },
+  signaturePartner: {
+    type: String,
+    default: ''
+  },
+  notes: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  documents: [{
+    name: String,
+    url: String,
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
 
   // Timestamps
   createdAt: {
@@ -169,115 +346,55 @@ const contractSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now
-  },
-
-  // For cancellation or notes
-  cancellationReason: {
-    type: String,
-    trim: true
-  },
-  notes: {
-    type: String,
-    trim: true
-  },
-
-  // Security fields
-  signatureClient: {
-    type: String, // Could be a base64 image or digital signature
-    default: null
-  },
-  signaturePartner: {
-    type: String,
-    default: null
   }
 }, {
-  timestamps: true // This will automatically manage createdAt and updatedAt
+  timestamps: true
 });
 
-// Pre-save middleware to calculate total price and duration
-contractSchema.pre('save', function(next) {
-  // Calculate duration in days
-  const start = new Date(this.startDateTime);
-  const end = new Date(this.endDateTime);
-  const durationMs = end - start;
-  this.durationDays = Math.ceil(durationMs / (1000 * 60 * 60 * 24));
-
-  // Calculate total price
-  this.prixTotal = this.durationDays * this.prixParJour;
-
-  // Generate contract number if not exists
-  if (!this.contractNumber) {
-    this.contractNumber = `CTR-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+// Pre-save middleware to generate contract number
+contractSchema.pre('save', async function(next) {
+  if (this.isNew) {
+    const count = await mongoose.model('Contract').countDocuments();
+    this.contractNumber = `CONTRACT-${Date.now()}-${count + 1}`;
   }
-
-  this.updatedAt = Date.now();
   next();
 });
 
-// Static method to check for overlapping contracts for the same vehicle
-contractSchema.statics.findOverlappingContracts = function(vehicleId, startDateTime, endDateTime, excludeContractId = null) {
-  const query = {
-    vehicleId: vehicleId,
-    status: { $in: ['confirmed', 'active'] }, // Only check active/confirmed contracts
-    $or: [
-      // New contract starts during existing contract
-      {
-        startDateTime: { $lte: new Date(startDateTime) },
-        endDateTime: { $gt: new Date(startDateTime) }
-      },
-      // New contract ends during existing contract
-      {
-        startDateTime: { $lt: new Date(endDateTime) },
-        endDateTime: { $gte: new Date(endDateTime) }
-      },
-      // New contract completely contains existing contract
-      {
-        startDateTime: { $gte: new Date(startDateTime) },
-        endDateTime: { $lte: new Date(endDateTime) }
-      }
-    ]
-  };
-
-  // Exclude current contract when updating
-  if (excludeContractId) {
-    query._id = { $ne: excludeContractId };
-  }
-
-  return this.find(query);
-};
-
-// Instance method to check if contract can be cancelled
-contractSchema.methods.canBeCancelled = function() {
-  const now = new Date();
-  const start = new Date(this.startDateTime);
-  const hoursUntilStart = (start - now) / (1000 * 60 * 60);
-  
-  return hoursUntilStart > 24; // Can cancel if more than 24 hours before start
-};
-
-// Virtual for client full name
-contractSchema.virtual('clientFullName').get(function() {
-  return `${this.clientFirstName} ${this.clientLastName}`;
-});
-
-// Virtual for second driver full name
-contractSchema.virtual('secondDriverFullName').get(function() {
-  if (this.secondDriverFirstName && this.secondDriverLastName) {
-    return `${this.secondDriverFirstName} ${this.secondDriverLastName}`;
-  }
-  return '';
-});
-
-// Ensure virtual fields are serialized when converted to JSON
-contractSchema.set('toJSON', { virtuals: true });
-contractSchema.set('toObject', { virtuals: true });
-
 // Indexes for better performance
-contractSchema.index({ partnerId: 1, createdAt: -1 });
-contractSchema.index({ vehicleId: 1, startDateTime: 1, endDateTime: 1 });
+contractSchema.index({ 'partnerInfo.partnerId': 1 });
+contractSchema.index({ 'vehicleInfo.vehicleId': 1 });
 contractSchema.index({ status: 1 });
-contractSchema.index({ clientCIN: 1 });
-contractSchema.index({ clientPhone: 1 });
-contractSchema.index({ contractNumber: 1 }, { unique: true, sparse: true });
+contractSchema.index({ 'rentalInfo.startDateTime': 1 });
+contractSchema.index({ 'rentalInfo.endDateTime': 1 });
+contractSchema.index({ 'clientInfo.cin': 1 });
+contractSchema.index({ 'clientInfo.passport': 1 });
 
-module.exports = mongoose.model('Contract', contractSchema);
+// Virtual for contract duration
+contractSchema.virtual('duration').get(function() {
+  return this.rentalInfo.rentalDays;
+});
+
+// Method to check if contract is active
+contractSchema.methods.isActive = function() {
+  const now = new Date();
+  return this.rentalInfo.startDateTime <= now && this.rentalInfo.endDateTime >= now && this.status === 'active';
+};
+
+// Static method to find contracts by partner
+contractSchema.statics.findByPartner = function(partnerId) {
+  return this.find({ 'partnerInfo.partnerId': partnerId });
+};
+
+// Static method to find active contracts
+contractSchema.statics.findActive = function() {
+  const now = new Date();
+  return this.find({
+    'rentalInfo.startDateTime': { $lte: now },
+    'rentalInfo.endDateTime': { $gte: now },
+    status: 'active'
+  });
+};
+
+const Contract = mongoose.model('Contract', contractSchema);
+
+module.exports = Contract;

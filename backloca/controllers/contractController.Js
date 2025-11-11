@@ -7,40 +7,19 @@ const User = require('../models/User');
 exports.createContract = async (req, res) => {
   try {
     const {
-      // Client information
-      clientLastName,
-      clientFirstName,
-      clientBirthDate,
-      clientPhone,
-      clientAddress,
-      clientPassport,
-      clientCIN,
-      clientLicenseNumber,
-      clientLicenseIssueDate,
-
-      // Second driver information
-      secondDriverLastName,
-      secondDriverFirstName,
-      secondDriverLicenseNumber,
-      secondDriverLicenseIssueDate,
-
-      // Vehicle information
-      vehicleId,
-
-      // Rental information
-      startDateTime,
-      endDateTime,
-      startLocation,
-      endLocation,
-
-      // Price information
-      prixParJour
+      // Complete contract structure from frontend
+      clientInfo,
+      secondDriverInfo,
+      partnerInfo,
+      vehicleInfo,
+      rentalInfo,
+      contractMetadata
     } = req.body;
 
-    console.log('📥 Données reçues pour le contrat:', req.body);
+    console.log('📥 Données complètes reçues pour le contrat:', req.body);
     console.log('👤 User ID from token:', req.user.id);
 
-    // Fetch the complete user information from database
+    // Fetch the complete user information from database for verification
     const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({
@@ -56,8 +35,8 @@ exports.createContract = async (req, res) => {
       email: user.email
     });
 
-    // Fetch vehicle information from database
-    const vehicle = await Vehicle.findById(vehicleId);
+    // Verify vehicle exists and belongs to the current user
+    const vehicle = await Vehicle.findById(vehicleInfo.vehicleId);
     if (!vehicle) {
       return res.status(404).json({
         success: false,
@@ -69,9 +48,7 @@ exports.createContract = async (req, res) => {
       id: vehicle._id,
       name: vehicle.name,
       type: vehicle.type,
-      boiteVitesse: vehicle.boiteVitesse,
-      partnerId: vehicle.partnerId,
-      pricePerDay: vehicle.pricePerDay
+      partnerId: vehicle.partnerId
     });
 
     // Verify that the vehicle belongs to the current user
@@ -82,31 +59,35 @@ exports.createContract = async (req, res) => {
       });
     }
 
-    // Check vehicle availability
-    const overlappingContracts = await Contract.findOverlappingContracts(
-      vehicleId,
-      startDateTime,
-      endDateTime
-    );
+    // Check vehicle availability for the selected dates
+    const overlappingContracts = await Contract.find({
+      'vehicleInfo.vehicleId': vehicleInfo.vehicleId,
+      'rentalInfo.startDateTime': { $lt: new Date(rentalInfo.endDateTime) },
+      'rentalInfo.endDateTime': { $gt: new Date(rentalInfo.startDateTime) },
+      status: { $in: ['pending', 'active'] }
+    });
 
     if (overlappingContracts.length > 0) {
       return res.status(400).json({
         success: false,
         message: 'Le véhicule n\'est pas disponible pour ces dates',
         conflictingDates: overlappingContracts.map(contract => ({
-          start: contract.startDateTime,
-          end: contract.endDateTime
+          start: contract.rentalInfo.startDateTime,
+          end: contract.rentalInfo.endDateTime
         }))
       });
     }
 
     // Check blacklist using CIN or passport
-    if (clientCIN || clientPassport) {
-      const isBlacklisted = await Blacklist.checkBlacklist({
-        clientCIN: clientCIN,
-        clientPassport: clientPassport,
-        clientLicenseNumber: clientLicenseNumber
+    if (clientInfo.cin || clientInfo.passport) {
+      const isBlacklisted = await Blacklist.findOne({
+        $or: [
+          { cin: clientInfo.cin },
+          { passport: clientInfo.passport },
+          { licenseNumber: clientInfo.licenseNumber }
+        ]
       });
+      
       if (isBlacklisted) {
         return res.status(400).json({
           success: false,
@@ -115,105 +96,123 @@ exports.createContract = async (req, res) => {
       }
     }
 
-    // Use custom price if provided, otherwise use vehicle's price
-    const dailyPrice = parseFloat(prixParJour) || vehicle.pricePerDay;
+    // Create complete contract data
+    const contractData = {
+      // 1. Partner/User Information (from database for accuracy)
+      partnerInfo: {
+        partnerId: user._id,
+        partnerName: user.entreprise || user.name,
+        partnerEmail: user.email,
+        partnerPhone: user.number,
+        partnerLogo: user.logoEntreprise,
+        partnerCountry: user.country,
+        partnerCity: user.city,
+        partnerStatus: user.status,
+        partnerRole: user.role,
+        partnerCreatedAt: user.createdAt,
+        partnerUpdatedAt: user.updatedAt
+      },
 
-    // ✅ AJOUT: Calcul de la durée et du prix total
-    const start = new Date(startDateTime);
-    const end = new Date(endDateTime);
-    const durationDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-    const prixTotal = durationDays * dailyPrice;
+      // 2. Client/Locataire Information
+      clientInfo: {
+        lastName: clientInfo.lastName,
+        firstName: clientInfo.firstName,
+        birthDate: new Date(clientInfo.birthDate),
+        phone: clientInfo.phone,
+        address: clientInfo.address,
+        passport: clientInfo.passport || '',
+        cin: clientInfo.cin || '',
+        licenseNumber: clientInfo.licenseNumber,
+        licenseIssueDate: new Date(clientInfo.licenseIssueDate)
+      },
 
-    console.log('💰 Calculs prix et durée:', {
-      durationDays,
-      prixTotal,
-      dailyPrice,
-      start: start.toISOString(),
-      end: end.toISOString()
-    });
+      // 3. Second Driver Information
+      secondDriverInfo: {
+        lastName: secondDriverInfo.lastName || '',
+        firstName: secondDriverInfo.firstName || '',
+        licenseNumber: secondDriverInfo.licenseNumber || '',
+        licenseIssueDate: secondDriverInfo.licenseIssueDate ? 
+          new Date(secondDriverInfo.licenseIssueDate) : null
+      },
 
-    // Create the contract with vehicle information
-    const contract = new Contract({
-      // Client information
-      clientLastName,
-      clientFirstName,
-      clientBirthDate: new Date(clientBirthDate),
-      clientPhone,
-      clientAddress,
-      clientPassport: clientPassport || '',
-      clientCIN: clientCIN || '',
-      clientLicenseNumber,
-      clientLicenseIssueDate: new Date(clientLicenseIssueDate),
+      // 4. Complete Vehicle Information (from database for accuracy)
+      vehicleInfo: {
+        vehicleId: vehicle._id,
+        name: vehicle.name,
+        type: vehicle.type,
+        boiteVitesse: vehicle.boiteVitesse,
+        description: vehicle.description,
+        image: vehicle.image,
+        pricePerDay: vehicle.pricePerDay,
+        carburant: vehicle.carburant,
+        niveauReservoir: vehicle.niveauReservoir,
+        radio: vehicle.radio,
+        gps: vehicle.gps,
+        mp3: vehicle.mp3,
+        cd: vehicle.cd,
+        nombreCles: vehicle.nombreCles,
+        kmDepart: vehicle.kmDepart,
+        kmRetour: vehicle.kmRetour,
+        impot2026: vehicle.impot2026,
+        impot2027: vehicle.impot2027,
+        impot2028: vehicle.impot2028,
+        impot2029: vehicle.impot2029,
+        assuranceStartDate: vehicle.assuranceStartDate,
+        assuranceEndDate: vehicle.assuranceEndDate,
+        vidangeInterval: vehicle.vidangeInterval,
+        remarques: vehicle.remarques,
+        dommages: vehicle.dommages,
+        available: vehicle.available,
+        createdAt: vehicle.createdAt,
+        updatedAt: vehicle.updatedAt
+      },
 
-      // Second driver information
-      secondDriverLastName: secondDriverLastName || '',
-      secondDriverFirstName: secondDriverFirstName || '',
-      secondDriverLicenseNumber: secondDriverLicenseNumber || '',
-      secondDriverLicenseIssueDate: secondDriverLicenseIssueDate ?
-        new Date(secondDriverLicenseIssueDate) : null,
+      // 5. Rental Information
+      rentalInfo: {
+        startDateTime: new Date(rentalInfo.startDateTime),
+        endDateTime: new Date(rentalInfo.endDateTime),
+        startLocation: rentalInfo.startLocation,
+        endLocation: rentalInfo.endLocation,
+        prixParJour: rentalInfo.prixParJour,
+        prixTotal: rentalInfo.prixTotal,
+        rentalDays: rentalInfo.rentalDays
+      },
 
-      // Vehicle information (inherit vehicle details)
-      vehicleId: vehicle._id,
-      vehicleName: vehicle.name,
-      vehicleType: vehicle.type,
-      vehicleBoiteVitesse: vehicle.boiteVitesse,
-      vehicleDescription: vehicle.description,
-      vehiclePricePerDay: vehicle.pricePerDay,
-      vehicleMarque: vehicle.marque,
-      vehicleModele: vehicle.modele,
-      vehicleAnnee: vehicle.annee,
-      vehicleCouleur: vehicle.couleur,
-      vehicleCarburant: vehicle.carburant,
-      vehiclePlaqueImmatriculation: vehicle.plaqueImmatriculation,
+      // 6. Contract Metadata
+      contractMetadata: {
+        createdBy: user._id,
+        createdAt: new Date().toISOString(),
+        status: 'pending'
+      },
 
-      // Rental information
-      startDateTime: start,
-      endDateTime: end,
-      startLocation,
-      endLocation,
-
-      // ✅ AJOUT: Prix et durée calculés
-      durationDays,
-      prixTotal,
-      prixParJour: dailyPrice,
-
-      // Partner information
-      partnerId: user._id,
-      partnerName: user.entreprise,
-      partnerEmail: user.email,
-
-      // Status
+      // Main status
       status: 'pending'
+    };
+
+    console.log('📄 Contrat complet à créer:', {
+      client: `${contractData.clientInfo.firstName} ${contractData.clientInfo.lastName}`,
+      vehicle: contractData.vehicleInfo.name,
+      dates: `${contractData.rentalInfo.startDateTime} to ${contractData.rentalInfo.endDateTime}`,
+      partner: contractData.partnerInfo.partnerName,
+      duration: contractData.rentalInfo.rentalDays,
+      total: contractData.rentalInfo.prixTotal
     });
 
-    console.log('📄 Contrat à créer:', {
-      client: `${contract.clientFirstName} ${contract.clientLastName}`,
-      vehicleId: contract.vehicleId,
-      dates: `${contract.startDateTime} to ${contract.endDateTime}`,
-      partner: contract.partnerName,
-      durationDays: contract.durationDays,
-      prixTotal: contract.prixTotal
-    });
-
+    // Create and save the contract
+    const contract = new Contract(contractData);
     await contract.save();
 
-    console.log('✅ Contrat créé avec informations véhicule héritées:', {
-      vehicleName: contract.vehicleName,
-      vehicleType: contract.vehicleType,
-      vehiclePricePerDay: contract.vehiclePricePerDay,
-      prixTotal: contract.prixTotal,
-      durationDays: contract.durationDays
+    console.log('✅ Contrat créé avec succès:', {
+      contractId: contract._id,
+      client: `${contract.clientInfo.firstName} ${contract.clientInfo.lastName}`,
+      vehicle: contract.vehicleInfo.name,
+      total: contract.rentalInfo.prixTotal
     });
-
-    // Populate the contract with vehicle information
-    const populatedContract = await Contract.findById(contract._id)
-      .populate('vehicleId', 'name type boiteVitesse pricePerDay marque modele annee couleur carburant plaqueImmatriculation')
-      .populate('partnerId', 'name entreprise email');
 
     res.status(201).json({
       success: true,
       message: 'Contrat créé avec succès',
-      contract: populatedContract
+      contract: contract
     });
   } catch (error) {
     console.error('❌ Erreur création contrat:', error);
@@ -249,7 +248,7 @@ exports.getMyContracts = async (req, res) => {
 
     const { status, page = 1, limit = 10 } = req.query;
 
-    let query = { partnerId: req.user.id };
+    let query = { 'partnerInfo.partnerId': req.user.id };
 
     // Filter by status if provided
     if (status && status !== 'all') {
@@ -257,8 +256,6 @@ exports.getMyContracts = async (req, res) => {
     }
 
     const contracts = await Contract.find(query)
-      .populate('vehicleId', 'name type boiteVitesse pricePerDay marque modele annee couleur carburant plaqueImmatriculation')
-      .populate('partnerId', 'name entreprise email')
       .sort({ createdAt: -1 })
       .limit(limit * 1)
       .skip((page - 1) * limit);
@@ -285,9 +282,7 @@ exports.getMyContracts = async (req, res) => {
 
 exports.getContract = async (req, res) => {
   try {
-    const contract = await Contract.findById(req.params.id)
-      .populate('vehicleId', 'name type boiteVitesse pricePerDay marque modele annee couleur carburant plaqueImmatriculation')
-      .populate('partnerId', 'name entreprise email');
+    const contract = await Contract.findById(req.params.id);
 
     if (!contract) {
       return res.status(404).json({
@@ -296,7 +291,8 @@ exports.getContract = async (req, res) => {
       });
     }
 
-    if (contract.partnerId._id.toString() !== req.user.id) {
+    // Check if the contract belongs to the current user
+    if (contract.partnerInfo.partnerId.toString() !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Accès non autorisé à ce contrat'
@@ -319,47 +315,14 @@ exports.getContract = async (req, res) => {
 exports.updateContract = async (req, res) => {
   try {
     const {
-      // Client information
-      clientLastName,
-      clientFirstName,
-      clientBirthDate,
-      clientPhone,
-      clientAddress,
-      clientPassport,
-      clientCIN,
-      clientLicenseNumber,
-      clientLicenseIssueDate,
-
-      // Second driver information
-      secondDriverLastName,
-      secondDriverFirstName,
-      secondDriverLicenseNumber,
-      secondDriverLicenseIssueDate,
-
-      // Vehicle information
-      vehicleId,
-
-      // Rental information
-      startDateTime,
-      endDateTime,
-      startLocation,
-      endLocation,
-
-      // Price information
-      prixParJour,
-
-      // Status
+      clientInfo,
+      secondDriverInfo,
+      vehicleInfo,
+      rentalInfo,
       status
     } = req.body;
 
-    // Fetch user from database
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'Utilisateur non trouvé'
-      });
-    }
+    console.log('📝 Mise à jour du contrat:', req.params.id);
 
     // Find existing contract
     const existingContract = await Contract.findById(req.params.id);
@@ -370,136 +333,150 @@ exports.updateContract = async (req, res) => {
       });
     }
 
-    if (existingContract.partnerId.toString() !== req.user.id) {
+    // Check if the contract belongs to the current user
+    if (existingContract.partnerInfo.partnerId.toString() !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Accès non autorisé à ce contrat'
       });
     }
 
+    // Validate dates
+    const start = rentalInfo?.startDateTime ? new Date(rentalInfo.startDateTime) : existingContract.rentalInfo.startDateTime;
+    const end = rentalInfo?.endDateTime ? new Date(rentalInfo.endDateTime) : existingContract.rentalInfo.endDateTime;
+
+    if (end <= start) {
+      return res.status(400).json({
+        success: false,
+        message: 'La date de fin doit être après la date de début'
+      });
+    }
+
+    // Check if vehicle is changed
     let vehicle = null;
-    if (vehicleId && vehicleId !== existingContract.vehicleId.toString()) {
-      vehicle = await Vehicle.findById(vehicleId);
+    const vehicleChanged = vehicleInfo?.vehicleId && 
+      vehicleInfo.vehicleId !== existingContract.vehicleInfo.vehicleId.toString();
+
+    if (vehicleChanged) {
+      vehicle = await Vehicle.findById(vehicleInfo.vehicleId);
       if (!vehicle || vehicle.partnerId.toString() !== req.user.id) {
         return res.status(403).json({
           success: false,
           message: 'Accès non autorisé à ce véhicule'
         });
       }
-    } else {
-      vehicle = await Vehicle.findById(existingContract.vehicleId);
     }
 
-    // ✅ AJOUT: Calcul de la durée et du prix total pour la mise à jour
-    const start = new Date(startDateTime || existingContract.startDateTime);
-    const end = new Date(endDateTime || existingContract.endDateTime);
-    const durationDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
-    const dailyPrice = parseFloat(prixParJour) || existingContract.prixParJour;
-    const prixTotal = durationDays * dailyPrice;
-
     // Check for overlapping contracts if dates or vehicle changed
-    if (
-      (startDateTime && startDateTime !== existingContract.startDateTime.toISOString()) ||
-      (endDateTime && endDateTime !== existingContract.endDateTime.toISOString()) ||
-      (vehicleId && vehicleId !== existingContract.vehicleId.toString())
-    ) {
-      const overlappingContracts = await Contract.findOverlappingContracts(
-        vehicleId || existingContract.vehicleId,
-        startDateTime || existingContract.startDateTime,
-        endDateTime || existingContract.endDateTime,
-        req.params.id // Exclude current contract
-      );
+    const datesChanged = rentalInfo?.startDateTime || rentalInfo?.endDateTime;
+    if (datesChanged || vehicleChanged) {
+      const targetVehicleId = vehicleChanged ? vehicleInfo.vehicleId : existingContract.vehicleInfo.vehicleId;
+      const targetStart = rentalInfo?.startDateTime || existingContract.rentalInfo.startDateTime;
+      const targetEnd = rentalInfo?.endDateTime || existingContract.rentalInfo.endDateTime;
+
+      const overlappingContracts = await Contract.find({
+        'vehicleInfo.vehicleId': targetVehicleId,
+        'rentalInfo.startDateTime': { $lt: new Date(targetEnd) },
+        'rentalInfo.endDateTime': { $gt: new Date(targetStart) },
+        status: { $in: ['pending', 'active'] },
+        _id: { $ne: req.params.id }
+      });
 
       if (overlappingContracts.length > 0) {
         return res.status(400).json({
           success: false,
           message: 'Le véhicule n\'est pas disponible pour ces dates',
           conflictingDates: overlappingContracts.map(contract => ({
-            start: contract.startDateTime,
-            end: contract.endDateTime
+            start: contract.rentalInfo.startDateTime,
+            end: contract.rentalInfo.endDateTime
           }))
         });
       }
     }
 
-    // Update contract using findByIdAndUpdate to trigger pre-save middleware
+    // Prepare update data
     const updateData = {
-      // Client information
-      clientLastName,
-      clientFirstName,
-      clientBirthDate: new Date(clientBirthDate),
-      clientPhone,
-      clientAddress,
-      clientPassport: clientPassport || '',
-      clientCIN: clientCIN || '',
-      clientLicenseNumber,
-      clientLicenseIssueDate: new Date(clientLicenseIssueDate),
-
-      // Second driver information
-      secondDriverLastName: secondDriverLastName || '',
-      secondDriverFirstName: secondDriverFirstName || '',
-      secondDriverLicenseNumber: secondDriverLicenseNumber || '',
-      secondDriverLicenseIssueDate: secondDriverLicenseIssueDate ?
-        new Date(secondDriverLicenseIssueDate) : null,
-
-      // Rental information
-      startDateTime: start,
-      endDateTime: end,
-      startLocation,
-      endLocation,
-
-      // ✅ AJOUT: Prix et durée calculés
-      durationDays,
-      prixTotal,
-      prixParJour: dailyPrice,
-
-      // Partner information
-      partnerName: user.entreprise,
-
-      // Status
       status: status || existingContract.status
     };
 
-    // Update vehicle information if changed
-    if (vehicleId && vehicleId !== existingContract.vehicleId.toString()) {
-      updateData.vehicleId = vehicleId;
-      updateData.vehicleName = vehicle.name;
-      updateData.vehicleType = vehicle.type; // ✅ CORRECTION: = au lieu de :
-      updateData.vehicleBoiteVitesse = vehicle.boiteVitesse; // ✅ CORRECTION
-      updateData.vehicleDescription = vehicle.description; // ✅ CORRECTION
-      updateData.vehiclePricePerDay = vehicle.pricePerDay; // ✅ CORRECTION
-      updateData.vehicleMarque = vehicle.marque; // ✅ CORRECTION
-      updateData.vehicleModele = vehicle.modele; // ✅ CORRECTION
-      updateData.vehicleAnnee = vehicle.annee; // ✅ CORRECTION
-      updateData.vehicleCouleur = vehicle.couleur; // ✅ CORRECTION
-      updateData.vehicleCarburant = vehicle.carburant; // ✅ CORRECTION
-      updateData.vehiclePlaqueImmatriculation = vehicle.plaqueImmatriculation; // ✅ CORRECTION
+    // Update client info if provided
+    if (clientInfo) {
+      updateData.clientInfo = {
+        ...existingContract.clientInfo.toObject(),
+        ...clientInfo,
+        birthDate: clientInfo.birthDate ? new Date(clientInfo.birthDate) : existingContract.clientInfo.birthDate,
+        licenseIssueDate: clientInfo.licenseIssueDate ? 
+          new Date(clientInfo.licenseIssueDate) : existingContract.clientInfo.licenseIssueDate
+      };
     }
 
-    console.log('📝 Mise à jour du contrat:', {
-      contractId: req.params.id,
-      client: `${clientFirstName} ${clientLastName}`,
-      vehicleId: vehicleId || existingContract.vehicleId,
-      durationDays,
-      prixTotal
-    });
+    // Update second driver info if provided
+    if (secondDriverInfo) {
+      updateData.secondDriverInfo = {
+        ...existingContract.secondDriverInfo.toObject(),
+        ...secondDriverInfo,
+        licenseIssueDate: secondDriverInfo.licenseIssueDate ? 
+          new Date(secondDriverInfo.licenseIssueDate) : existingContract.secondDriverInfo.licenseIssueDate
+      };
+    }
 
-    // Update contract - this will trigger pre-save middleware
+    // Update rental info if provided
+    if (rentalInfo) {
+      updateData.rentalInfo = {
+        ...existingContract.rentalInfo.toObject(),
+        ...rentalInfo,
+        startDateTime: start,
+        endDateTime: end
+      };
+    }
+
+    // Update vehicle info if changed
+    if (vehicleChanged && vehicle) {
+      updateData.vehicleInfo = {
+        vehicleId: vehicle._id,
+        name: vehicle.name,
+        type: vehicle.type,
+        boiteVitesse: vehicle.boiteVitesse,
+        description: vehicle.description,
+        image: vehicle.image,
+        pricePerDay: vehicle.pricePerDay,
+        carburant: vehicle.carburant,
+        niveauReservoir: vehicle.niveauReservoir,
+        radio: vehicle.radio,
+        gps: vehicle.gps,
+        mp3: vehicle.mp3,
+        cd: vehicle.cd,
+        nombreCles: vehicle.nombreCles,
+        kmDepart: vehicle.kmDepart,
+        kmRetour: vehicle.kmRetour,
+        impot2026: vehicle.impot2026,
+        impot2027: vehicle.impot2027,
+        impot2028: vehicle.impot2028,
+        impot2029: vehicle.impot2029,
+        assuranceStartDate: vehicle.assuranceStartDate,
+        assuranceEndDate: vehicle.assuranceEndDate,
+        vidangeInterval: vehicle.vidangeInterval,
+        remarques: vehicle.remarques,
+        dommages: vehicle.dommages,
+        available: vehicle.available,
+        createdAt: vehicle.createdAt,
+        updatedAt: vehicle.updatedAt
+      };
+    }
+
+    console.log('📤 Données de mise à jour:', updateData);
+
+    // Update contract
     const contract = await Contract.findByIdAndUpdate(
       req.params.id,
       updateData,
       { new: true, runValidators: true }
     );
 
-    // Populate and return updated contract
-    const updatedContract = await Contract.findById(contract._id)
-      .populate('vehicleId', 'name type boiteVitesse pricePerDay marque modele annee couleur carburant plaqueImmatriculation')
-      .populate('partnerId', 'name entreprise email');
-
     res.json({
       success: true,
       message: 'Contrat mis à jour avec succès',
-      contract: updatedContract
+      contract: contract
     });
   } catch (error) {
     console.error('❌ Erreur modification contrat:', error);
@@ -532,7 +509,8 @@ exports.deleteContract = async (req, res) => {
       });
     }
 
-    if (contract.partnerId.toString() !== req.user.id) {
+    // Check if the contract belongs to the current user
+    if (contract.partnerInfo.partnerId.toString() !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Accès non autorisé à ce contrat'
@@ -574,7 +552,8 @@ exports.updateContractStatus = async (req, res) => {
       });
     }
 
-    if (contract.partnerId.toString() !== req.user.id) {
+    // Check if the contract belongs to the current user
+    if (contract.partnerInfo.partnerId.toString() !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Accès non autorisé à ce contrat'
@@ -582,24 +561,27 @@ exports.updateContractStatus = async (req, res) => {
     }
 
     // Check if contract can be cancelled
-    if (status === 'cancelled' && !contract.canBeCancelled()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Impossible d\'annuler le contrat: moins de 24 heures avant le début'
-      });
+    if (status === 'cancelled') {
+      const now = new Date();
+      const startDate = new Date(contract.rentalInfo.startDateTime);
+      const timeDiff = startDate.getTime() - now.getTime();
+      const hoursDiff = timeDiff / (1000 * 60 * 60);
+
+      if (hoursDiff < 24) {
+        return res.status(400).json({
+          success: false,
+          message: 'Impossible d\'annuler le contrat: moins de 24 heures avant le début'
+        });
+      }
     }
 
     contract.status = status;
     await contract.save();
 
-    const updatedContract = await Contract.findById(contract._id)
-      .populate('vehicleId', 'name type boiteVitesse pricePerDay marque modele annee couleur carburant plaqueImmatriculation')
-      .populate('partnerId', 'name entreprise email');
-
     res.json({
       success: true,
       message: 'Statut du contrat mis à jour',
-      contract: updatedContract
+      contract: contract
     });
   } catch (error) {
     console.error('❌ Erreur mise à jour statut:', error);
@@ -617,13 +599,19 @@ exports.checkVehicleAvailability = async (req, res) => {
     const startDate = new Date(startDateTime);
     const endDate = new Date(endDateTime);
 
-    // Find overlapping contracts using the model's static method
-    const overlappingContracts = await Contract.findOverlappingContracts(
-      vehicleId,
-      startDateTime,
-      endDateTime,
-      contractId
-    );
+    // Find overlapping contracts
+    const query = {
+      'vehicleInfo.vehicleId': vehicleId,
+      'rentalInfo.startDateTime': { $lt: endDate },
+      'rentalInfo.endDateTime': { $gt: startDate },
+      status: { $in: ['pending', 'active'] }
+    };
+
+    if (contractId) {
+      query._id = { $ne: contractId };
+    }
+
+    const overlappingContracts = await Contract.find(query);
 
     const isAvailable = overlappingContracts.length === 0;
 
@@ -632,9 +620,9 @@ exports.checkVehicleAvailability = async (req, res) => {
       isAvailable,
       conflictingContracts: isAvailable ? [] : overlappingContracts.map(contract => ({
         id: contract._id,
-        client: `${contract.clientFirstName} ${contract.clientLastName}`,
-        start: contract.startDateTime,
-        end: contract.endDateTime,
+        client: `${contract.clientInfo.firstName} ${contract.clientInfo.lastName}`,
+        start: contract.rentalInfo.startDateTime,
+        end: contract.rentalInfo.endDateTime,
         status: contract.status
       }))
     });
@@ -647,83 +635,29 @@ exports.checkVehicleAvailability = async (req, res) => {
   }
 };
 
-exports.updateVehicleInContracts = async (req, res) => {
-  try {
-    const { vehicleId } = req.params;
-
-    // Verify that the vehicle belongs to the current user
-    const vehicle = await Vehicle.findById(vehicleId);
-    if (!vehicle) {
-      return res.status(404).json({
-        success: false,
-        message: 'Véhicule non trouvé'
-      });
-    }
-
-    if (vehicle.partnerId.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Accès non autorisé à ce véhicule'
-      });
-    }
-
-    // Update all contracts with the new vehicle information
-    const result = await Contract.updateMany(
-      { vehicleId: vehicleId },
-      {
-        $set: {
-          vehicleName: vehicle.name,
-          vehicleType: vehicle.type,
-          vehicleBoiteVitesse: vehicle.boiteVitesse,
-          vehicleDescription: vehicle.description,
-          vehiclePricePerDay: vehicle.pricePerDay,
-          vehicleMarque: vehicle.marque,
-          vehicleModele: vehicle.modele,
-          vehicleAnnee: vehicle.annee,
-          vehicleCouleur: vehicle.couleur,
-          vehicleCarburant: vehicle.carburant,
-          vehiclePlaqueImmatriculation: vehicle.plaqueImmatriculation
-        }
-      }
-    );
-
-    res.json({
-      success: true,
-      message: `Informations véhicule mises à jour dans ${result.modifiedCount} contrats`,
-      updatedCount: result.modifiedCount
-    });
-  } catch (error) {
-    console.error('❌ Erreur mise à jour véhicule dans contrats:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la mise à jour des informations véhicule'
-    });
-  }
-};
-
 exports.getContractStats = async (req, res) => {
   try {
     const partnerId = req.user.id;
 
     const stats = await Contract.aggregate([
-      { $match: { partnerId: new require('mongoose').Types.ObjectId(partnerId) } },
+      { $match: { 'partnerInfo.partnerId': new require('mongoose').Types.ObjectId(partnerId) } },
       {
         $group: {
           _id: '$status',
           count: { $sum: 1 },
-          totalRevenue: { $sum: '$prixTotal' }
+          totalRevenue: { $sum: '$rentalInfo.prixTotal' }
         }
       }
     ]);
 
-    const totalContracts = await Contract.countDocuments({ partnerId });
+    const totalContracts = await Contract.countDocuments({ 'partnerInfo.partnerId': partnerId });
     const totalRevenue = await Contract.aggregate([
-      { $match: { partnerId: new require('mongoose').Types.ObjectId(partnerId) } },
-      { $group: { _id: null, total: { $sum: '$prixTotal' } } }
+      { $match: { 'partnerInfo.partnerId': new require('mongoose').Types.ObjectId(partnerId) } },
+      { $group: { _id: null, total: { $sum: '$rentalInfo.prixTotal' } } }
     ]);
 
     const monthlyStats = await Contract.aggregate([
-      { $match: { partnerId: new require('mongoose').Types.ObjectId(partnerId) } },
+      { $match: { 'partnerInfo.partnerId': new require('mongoose').Types.ObjectId(partnerId) } },
       {
         $group: {
           _id: {
@@ -731,7 +665,7 @@ exports.getContractStats = async (req, res) => {
             month: { $month: '$createdAt' }
           },
           count: { $sum: 1 },
-          revenue: { $sum: '$prixTotal' }
+          revenue: { $sum: '$rentalInfo.prixTotal' }
         }
       },
       { $sort: { '_id.year': -1, '_id.month': -1 } },
@@ -762,12 +696,11 @@ exports.getUpcomingReturns = async (req, res) => {
     const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
 
     const upcomingReturns = await Contract.find({
-      partnerId: req.user.id,
+      'partnerInfo.partnerId': req.user.id,
       status: 'active',
-      endDateTime: { $lte: nextWeek, $gte: today }
+      'rentalInfo.endDateTime': { $lte: nextWeek, $gte: today }
     })
-    .populate('vehicleId', 'name plaqueImmatriculation')
-    .sort({ endDateTime: 1 })
+    .sort({ 'rentalInfo.endDateTime': 1 })
     .limit(10);
 
     res.json({
@@ -779,6 +712,75 @@ exports.getUpcomingReturns = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des retours à venir'
+    });
+  }
+};
+
+// New method to update vehicle information in all contracts
+exports.updateVehicleInContracts = async (req, res) => {
+  try {
+    const { vehicleId } = req.params;
+
+    // Verify that the vehicle belongs to the current user
+    const vehicle = await Vehicle.findById(vehicleId);
+    if (!vehicle) {
+      return res.status(404).json({
+        success: false,
+        message: 'Véhicule non trouvé'
+      });
+    }
+
+    if (vehicle.partnerId.toString() !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Accès non autorisé à ce véhicule'
+      });
+    }
+
+    // Update all contracts with the new vehicle information
+    const result = await Contract.updateMany(
+      { 'vehicleInfo.vehicleId': vehicleId },
+      {
+        $set: {
+          'vehicleInfo.name': vehicle.name,
+          'vehicleInfo.type': vehicle.type,
+          'vehicleInfo.boiteVitesse': vehicle.boiteVitesse,
+          'vehicleInfo.description': vehicle.description,
+          'vehicleInfo.image': vehicle.image,
+          'vehicleInfo.pricePerDay': vehicle.pricePerDay,
+          'vehicleInfo.carburant': vehicle.carburant,
+          'vehicleInfo.niveauReservoir': vehicle.niveauReservoir,
+          'vehicleInfo.radio': vehicle.radio,
+          'vehicleInfo.gps': vehicle.gps,
+          'vehicleInfo.mp3': vehicle.mp3,
+          'vehicleInfo.cd': vehicle.cd,
+          'vehicleInfo.nombreCles': vehicle.nombreCles,
+          'vehicleInfo.kmDepart': vehicle.kmDepart,
+          'vehicleInfo.kmRetour': vehicle.kmRetour,
+          'vehicleInfo.impot2026': vehicle.impot2026,
+          'vehicleInfo.impot2027': vehicle.impot2027,
+          'vehicleInfo.impot2028': vehicle.impot2028,
+          'vehicleInfo.impot2029': vehicle.impot2029,
+          'vehicleInfo.assuranceStartDate': vehicle.assuranceStartDate,
+          'vehicleInfo.assuranceEndDate': vehicle.assuranceEndDate,
+          'vehicleInfo.vidangeInterval': vehicle.vidangeInterval,
+          'vehicleInfo.remarques': vehicle.remarques,
+          'vehicleInfo.dommages': vehicle.dommages,
+          'vehicleInfo.available': vehicle.available
+        }
+      }
+    );
+
+    res.json({
+      success: true,
+      message: `Informations véhicule mises à jour dans ${result.modifiedCount} contrats`,
+      updatedCount: result.modifiedCount
+    });
+  } catch (error) {
+    console.error('❌ Erreur mise à jour véhicule dans contrats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la mise à jour des informations véhicule'
     });
   }
 };
