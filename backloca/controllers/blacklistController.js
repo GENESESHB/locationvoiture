@@ -1,35 +1,56 @@
+// controllers/blacklistController.js
 const Blacklist = require('../models/Blacklist');
 
 exports.addToBlacklist = async (req, res) => {
   try {
-    const {
-      clientName,
-      clientEmail,
-      clientPhone,
-      clientCIN,
-      reason
-    } = req.body;
+    const { cin, passport, licenseNumber, reason } = req.body;
 
-    const existing = await Blacklist.findOne({
-      clientCIN,
-      partnerId: req.user.id
-    });
-
-    if (existing) {
-      return res.status(400).json({ 
+    // Check if at least one identifier is provided
+    if (!cin && !passport && !licenseNumber) {
+      return res.status(400).json({
         success: false,
-        message: 'Ce client est déjà dans votre liste noire' 
+        message: 'Au moins un identifiant (CIN, Passeport ou Permis) est requis'
       });
     }
 
+    // Check if client with same CIN already exists
+    if (cin) {
+      const existingByCIN = await Blacklist.findOne({ cin });
+      if (existingByCIN) {
+        return res.status(400).json({
+          success: false,
+          message: 'Un client avec ce CIN est déjà dans la liste noire'
+        });
+      }
+    }
+
+    // Check if client with same passport already exists
+    if (passport) {
+      const existingByPassport = await Blacklist.findOne({ passport });
+      if (existingByPassport) {
+        return res.status(400).json({
+          success: false,
+          message: 'Un client avec ce passeport est déjà dans la liste noire'
+        });
+      }
+    }
+
+    // Check if client with same license number already exists
+    if (licenseNumber) {
+      const existingByLicense = await Blacklist.findOne({ licenseNumber });
+      if (existingByLicense) {
+        return res.status(400).json({
+          success: false,
+          message: 'Un client avec ce numéro de permis est déjà dans la liste noire'
+        });
+      }
+    }
+
     const blacklistedClient = new Blacklist({
-      clientName,
-      clientEmail,
-      clientPhone,
-      clientCIN,
-      reason,
-      partnerId: req.user.id,
-      addedBy: req.user.name
+      cin: cin || undefined,
+      passport: passport || undefined,
+      licenseNumber: licenseNumber || undefined,
+      reason
     });
 
     await blacklistedClient.save();
@@ -41,38 +62,60 @@ exports.addToBlacklist = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ 
+    
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Cette identifiant existe déjà dans la liste noire'
+      });
+    }
+    
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(err => err.message);
+      return res.status(400).json({
+        success: false,
+        message: messages.join(', ')
+      });
+    }
+    
+    res.status(500).json({
       success: false,
-      message: 'Erreur lors de l\'ajout à la liste noire' 
+      message: 'Erreur lors de l\'ajout à la liste noire'
     });
   }
 };
 
-exports.getMyBlacklist = async (req, res) => {
+exports.getBlacklist = async (req, res) => {
   try {
-    const blacklist = await Blacklist.find({ partnerId: req.user.id })
-      .sort({ createdAt: -1 });
-
+    const blacklist = await Blacklist.find().sort({ dateAdded: -1 });
     res.json({
       success: true,
       blacklist
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Erreur lors de la récupération de la liste noire' 
+      message: 'Erreur lors de la récupération de la liste noire'
     });
   }
 };
 
 exports.checkBlacklist = async (req, res) => {
   try {
-    const { email, cin } = req.query;
+    const { cin, passport, licenseNumber } = req.query;
 
-    let query = { partnerId: req.user.id };
-    if (email) query.clientEmail = email;
-    if (cin) query.clientCIN = cin;
+    let query = {};
+    if (cin) query.cin = cin;
+    if (passport) query.passport = passport;
+    if (licenseNumber) query.licenseNumber = licenseNumber;
+
+    if (Object.keys(query).length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Au moins un identifiant (CIN, Passeport ou Permis) est requis'
+      });
+    }
 
     const blacklisted = await Blacklist.findOne(query);
 
@@ -83,9 +126,33 @@ exports.checkBlacklist = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Erreur lors de la vérification' 
+      message: 'Erreur lors de la vérification'
+    });
+  }
+};
+
+exports.getBlacklistEntry = async (req, res) => {
+  try {
+    const blacklisted = await Blacklist.findById(req.params.id);
+
+    if (!blacklisted) {
+      return res.status(404).json({
+        success: false,
+        message: 'Client non trouvé dans la liste noire'
+      });
+    }
+
+    res.json({
+      success: true,
+      blacklistedClient: blacklisted
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération'
     });
   }
 };
@@ -93,32 +160,25 @@ exports.checkBlacklist = async (req, res) => {
 exports.removeFromBlacklist = async (req, res) => {
   try {
     const blacklisted = await Blacklist.findById(req.params.id);
-    
-    if (!blacklisted) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Client non trouvé dans la liste noire' 
-      });
-    }
 
-    if (blacklisted.partnerId.toString() !== req.user.id) {
-      return res.status(403).json({ 
+    if (!blacklisted) {
+      return res.status(404).json({
         success: false,
-        message: 'Accès non autorisé à cette entrée' 
+        message: 'Client non trouvé dans la liste noire'
       });
     }
 
     await Blacklist.findByIdAndDelete(req.params.id);
-    
-    res.json({ 
+
+    res.json({
       success: true,
-      message: 'Client retiré de la liste noire avec succès' 
+      message: 'Client retiré de la liste noire avec succès'
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      message: 'Erreur lors de la suppression' 
+      message: 'Erreur lors de la suppression'
     });
   }
 };

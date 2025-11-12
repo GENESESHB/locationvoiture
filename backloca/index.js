@@ -107,7 +107,8 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/users', usersRoutes); // For registration etc.
 app.use('/api/user', userRoutes); // For user controller routes
 app.use('/api/auth', authRoutes);
-
+// In your index.js file, add this line with the other route imports:
+app.use('/api/clients', require('./routes/clients'));
 app.use('/api/vehicles', require('./routes/vehicles'));
 app.use('/api/contracts', require('./routes/contracts'));
 app.use('/api/blacklist', require('./routes/blacklist'));

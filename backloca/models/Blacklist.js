@@ -20,13 +20,17 @@ const blacklistSchema = new mongoose.Schema({
   dateAdded: {
     type: Date,
     default: Date.now
+  },
+  addedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }
 });
 
 // Méthode statique pour vérifier si un client est blacklisté
 blacklistSchema.statics.checkBlacklist = async function(clientData) {
   const { clientCIN, clientPassport, clientLicenseNumber } = clientData;
-  
+
   const blacklisted = await this.findOne({
     $or: [
       { cin: clientCIN },
@@ -38,4 +42,5 @@ blacklistSchema.statics.checkBlacklist = async function(clientData) {
   return blacklisted;
 };
 
-module.exports = mongoose.model('Blacklist', blacklistSchema);
+// Check if model already exists before compiling
+module.exports = mongoose.models.Blacklist || mongoose.model('Blacklist', blacklistSchema);
