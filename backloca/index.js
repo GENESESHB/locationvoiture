@@ -5,11 +5,10 @@ const axios = require('axios');
 const cors = require('cors');
 const mongoose = require('mongoose');
 const path = require('path');
-
 const userRoutes = require('./routes/userRoutes');
 const usersRoutes = require('./routes/users');
 const authRoutes = require('./routes/authRoutes');
-
+const blacklistVerifyRoutes = require('./routes/blacklistVerify'); 
 const app = express();
 
 app.use(cors());
@@ -112,7 +111,7 @@ app.use('/api/clients', require('./routes/clients'));
 app.use('/api/vehicles', require('./routes/vehicles'));
 app.use('/api/contracts', require('./routes/contracts'));
 app.use('/api/blacklist', require('./routes/blacklist'));
-
+app.use('/api/blacklist-verify', blacklistVerifyRoutes); 
 // Route de test pour vérifier que l'API fonctionne
 app.get('/api', (req, res) => {
   res.json({
